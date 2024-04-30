@@ -9,74 +9,75 @@
 ## Data Preparation
 ########################
 
-# Load Data
-LifeExpectancy <- read_excel('life expectancy.xlsx', col_names = FALSE)
-LifeExpectancy <- as.data.frame(LifeExpectancy)
-LifeExpectancy <- LifeExpectancy[-1, ]
-colnames(LifeExpectancy) <- LifeExpectancy[1, ]
-LifeExpectancy <- LifeExpectancy[-1, ]
-LifeExpectancy <- LifeExpectancy[order(LifeExpectancy$`Country Name`), ]
+# Load required library
+library(plm)
 
-LifeExpectancy <- LifeExpectancy[, c('Country Name', 'Year', 'Health Expenditure %')]
-View(LifeExpectancy)
+# Set parameters
+n <- 100  # Number of individuals
+T <- 5    # Number of time periods
 
-#### Sample, Real Data ####
+# Generate individual and time indices
+id <- rep(1:n, each = T)
+time <- rep(1:T, times = n)
 
-p_mis <- 0.30
-data_real_mcar <- data_real
-# Indicator for which values are set to missing exactly p_mis % missing values
-mis_real_mcar <- sample(1:1000, p_mis * 1000, replace = FALSE)    
-data_real_mcar[mis_real_mcar, 3] <- NA
-summary(data_real_mcar)
+# Simulate individual-specific effects
+alpha_i <- rnorm(n, mean = 0, sd = 1)
 
-#####################
-## MAR Missing Data
-#####################
+# Simulate time-specific effects
+gamma_t <- rnorm(T, mean = 0, sd = 1)
 
+# Generate random error term
+error <- rnorm(n*T, mean = 0, sd = 1)
 
-#### Deterministic, Real Data ####
+# Simulate balanced panel data
+data_balanced <- data.frame(
+  id = id,
+  time = time,
+  x1 = rnorm(n*T),
+  x2 = rnorm(n*T),
+  y = 1 + 2 * rnorm(n*T) + 3 * rnorm(n*T) + alpha_i[id] + gamma_t[time] + error
+)
 
-data_real_mar_d <- data_real
-q_views <- qnorm(.3, 16, 7)
-# This creates a logical vector which indicates when the "true value" of subscribers is below the theoretical quantile.
-mis_mar_d <- views < q_views 
-data_real_mar_d$counts[mis_mar_d] <- NA
-summary(data_real_mar_d)
+# Convert to panel data object
+balanced_panel_data <- pdata.frame(data_balanced, index = c("id", "time"))
 
-#### Probabilistic, Linear Regression model, Real data ####
+# View the first few rows of the balanced panel data
+head(balanced_panel_data)
 
-data_real_mnar_p <- data_real
-# model missingness by logistic regression (probit):
-# the missing of a value now also depends on counts itself
-z_miss_mnar_p <-0.5 + 1 * subscribers - 0.7 * views - 5 * counts + rnorm(1000, 0, 3)
-mis_mnar_p <- z_miss_mnar_p < quantile(z_miss_mnar_p, p_mis)
-data_real_mnar_p$counts[mis_mnar_p] <- NA
-summary(data_real_mnar_p)
+# Set parameters
+n <- 100  # Number of individuals
+T <- 5    # Maximum number of time periods
 
-#############################
-## Visualize the Missing Data
-#############################
+# Generate random number of observations per individual
+obs_per_individual <- sample(2:T, n, replace = TRUE)
 
+# Generate individual and time indices
+id <- rep(1:n, times = obs_per_individual)
+time <- unlist(lapply(obs_per_individual, function(x) sample(1:T, x)))
 
-library(VIM)
-library("dplyr")
-library("ggplot2")
-library("gridExtra")
-par(mfrow=c(2,3)) 
+# Simulate individual-specific effects
+alpha_i <- rnorm(n, mean = 0, sd = 1)
 
-matrixplot(data_real_mcar, sortby = c('counts'), main = "MCAR on Real Data")
-matrixplot(data_simulated_mcar, sortby = c('x3'), main = "MCAR on Simulated Data")
+# Simulate time-specific effects
+gamma_t <- rnorm(T, mean = 0, sd = 1)
 
-matrixplot(data_real_mar_d, sortby = c('counts'), main = "MAR on Real Data")
-matrixplot(data_simulated_mar_d, sortby = c('x3'), main = "MAR on simulated Data")
+# Generate random error term
+error <- rnorm(length(id), mean = 0, sd = 1)
 
-matrixplot(data_real_mnar_p, sortby = c('counts'), main = "MNAR on Real Data")
-matrixplot(data_simulated_mnar_p, sortby = c('x3'), main = "MNAR on simulated Data")
+# Simulate unbalanced panel data
+data_unbalanced <- data.frame(
+  id = id,
+  time = time,
+  x1 = rnorm(length(id)),
+  x2 = rnorm(length(id)),
+  y = 1 + 2 * rnorm(length(id)) + 3 * rnorm(length(id)) + alpha_i[id] + gamma_t[time] + error
+)
 
-# Some other plot that can be mentioned
-par(mfrow=c(1,1)) 
-aggr(data_real_mcar,numbers = TRUE, prop = c(TRUE, FALSE)) # similar for all the data. 
-pbox(data_real_mcar[, c('views', "counts")]) # similar for all the data. 
+# Convert to panel data object
+unbalanced_panel_data <- pdata.frame(data_unbalanced, index = c("id", "time"))
+
+# View the first few rows of the unbalanced panel data
+head(unbalanced_panel_data)
 
 
 
