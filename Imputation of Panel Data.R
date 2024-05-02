@@ -6,7 +6,7 @@
 # setwd("/Users/tipusultan/Documents/GitHub/Imputation-of-Panel-Data")
 
 ########################
-## Data Preparation
+## Creating the Data
 ########################
 
 # Load required library
@@ -78,6 +78,51 @@ unbalanced_panel_data <- pdata.frame(data_unbalanced, index = c("id", "time"))
 
 # View the first few rows of the unbalanced panel data
 head(unbalanced_panel_data)
+
+
+########################
+## Missingness in Balanced Panel
+########################
+
+#### MCAR ####
+
+p_mis_50 <- 0.50
+num_rows <- nrow(balanced_panel_data)  # Get the number of rows in balanced_panel_data
+mis_simulated_mcar_50 <- sample(1:num_rows, p_mis_50 * num_rows, replace = FALSE)    
+balanced_panel_data_mcar_50 <- balanced_panel_data
+balanced_panel_data_mcar_50[mis_simulated_mcar_50, 3] <- NA
+summary(balanced_panel_data_mcar_50)
+
+p_mis_30 <- 0.30
+num_rows <- nrow(balanced_panel_data)  # Get the number of rows in balanced_panel_data
+mis_simulated_mcar_30 <- sample(1:num_rows, p_mis_30 * num_rows, replace = FALSE)    
+balanced_panel_data_mcar_30 <- balanced_panel_data
+balanced_panel_data_mcar_30[mis_simulated_mcar_30, 3] <- NA
+summary(balanced_panel_data_mcar_30)
+
+p_mis_10 <- 0.10
+num_rows <- nrow(balanced_panel_data)  # Get the number of rows in balanced_panel_data
+mis_simulated_mcar_10 <- sample(1:num_rows, p_mis_10 * num_rows, replace = FALSE)    
+balanced_panel_data_mcar_10 <- balanced_panel_data
+balanced_panel_data_mcar_10[mis_simulated_mcar_10, 3] <- NA
+summary(balanced_panel_data_mcar_10)
+
+#### MAR ####
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
