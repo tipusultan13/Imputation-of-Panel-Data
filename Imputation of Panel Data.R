@@ -403,15 +403,22 @@ summary(unbalanced_panel_data_mnar_10)
 ## mitml package
 ######################
 
+library(mitml)
 
 
 
 
+balanced_panel_data_mcar_50 = data.frame(balanced_panel_data_mcar_50)
+balanced_panel_data_mcar_50 = balanced_panel_data_mcar_50[c("id", "time", "x1", "x2")]
+type <- c(0, -2, 1, 3)
+names(type) <- colnames(balanced_panel_data_mcar_50)
+imp <- panImpute(balanced_panel_data_mcar_50, type = type, n.burn = 1000, n.iter = 100, m = 3)
+head(mitmlComplete(imp, print = 3))
 
 
-
-
-
+######################
+## mice package
+######################
 
 
 
