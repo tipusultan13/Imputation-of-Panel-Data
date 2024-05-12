@@ -426,4 +426,31 @@ balanced_panel_data_mcar_50_pan_imp$imp$counts
 balanced_panel_data_mcar_50_mice_imp <- complete(balanced_panel_data_mcar_50_mice_imp,3)
 balanced_panel_data_mcar_50_mice_imp
 
+############################
+## LSTM Network
+############################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
