@@ -5,6 +5,30 @@
 # Set Directory
 # setwd("/Users/tipusultan/Documents/GitHub/Imputation-of-Panel-Data")
 
+
+########################
+## Data
+########################
+# Load the data
+data <- readRDS("population.RDS")
+data = data.frame(data)
+data = na.omit(data[c("id", "year", "EF44", "EF619", "EF413")])
+summary(data)
+# Count unique values in the 'id' column
+count(data, id)
+
+# Count unique values in the 'year' column
+count(data, year)
+
+# Count unique values in the 'EF44' column
+count(data, EF44)
+
+# Count unique values in the 'EF619' column
+count(data, EF619)
+
+# Count unique values in the 'EF413' column
+count(data, EF413)
+
 ########################
 ## Creating the Data
 ########################
