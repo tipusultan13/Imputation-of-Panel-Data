@@ -15,10 +15,9 @@ library(dplyr)
 RawData <- readRDS("population.RDS")
 RawData = data.frame(RawData)
 data = RawData[c("id", "year","EF310", "ind.median", "inc.ind")]
-# "id", "year", "EF310", "EF44", "EF619", "EF413"
 summary(data)
 
-# unique(data$EF310)
+# unique(data$variable) , to check the unique values
 
 
 # Count unique values in the 'id' column
