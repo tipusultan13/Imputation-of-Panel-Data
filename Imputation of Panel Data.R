@@ -3,31 +3,39 @@
 ###################################
 
 # Set Directory
-# setwd("/Users/tipusultan/Documents/GitHub/Imputation-of-Panel-Data")
+setwd("/Users/tipusultan/Documents/GitHub/Imputation-of-Panel-Data")
 
 
 ########################
 ## Data
 ########################
+library(dplyr)
+
 # Load the data
-data <- readRDS("population.RDS")
-data = data.frame(data)
-data = na.omit(data[c("id", "year", "EF44", "EF619", "EF413")])
+RawData <- readRDS("population.RDS")
+RawData = data.frame(RawData)
+data = RawData[c("id", "year","EF310", "ind.median", "inc.ind")]
+# "id", "year", "EF310", "EF44", "EF619", "EF413"
 summary(data)
+
+# unique(data$EF310)
+
+
 # Count unique values in the 'id' column
 count(data, id)
 
 # Count unique values in the 'year' column
 count(data, year)
 
-# Count unique values in the 'EF44' column
-count(data, EF44)
+# Count unique values in the 'ind.median' column - Highest general school degree
+count(data, EF310)
 
-# Count unique values in the 'EF619' column
-count(data, EF619)
+# Count unique values in the 'ind.median' column - Median Income
+count(data, ind.median)
 
-# Count unique values in the 'EF413' column
-count(data, EF413)
+# Count unique values in the 'inc.ind' column - Income
+count(data, inc.ind)
+
 
 ########################
 ## Creating the Data
