@@ -19,8 +19,6 @@ data = RawData[c("id", "year","EF310", "ind.median", "inc.ind")]
 colnames(data) <- c("ID", "Year", "Education", "MedianIncome", "IndividualIncome")
 summary(data)
 
-#unique(data$variable) , to check the unique values
-
 # Count unique values in the 'ID' column
 count(data, ID)
 
