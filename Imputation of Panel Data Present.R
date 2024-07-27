@@ -81,7 +81,7 @@ if (length(unbalanced_ids) > 0) {
 }
 
 ########################
-## Balanced Panel
+## Unalanced Panel
 ########################
 # The initial data is considered as a unbalanced panel data
 UnbalancedPanel <- data
