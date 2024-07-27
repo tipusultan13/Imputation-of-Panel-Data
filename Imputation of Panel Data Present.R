@@ -19,27 +19,29 @@ data = RawData[c("id", "year","EF310", "ind.median", "inc.ind")]
 colnames(data) <- c("ID", "Year", "Education", "MedianIncome", "IndividualIncome")
 summary(data)
 
-# Count unique values in the 'ID' column
+# 'ID' column
 count(data, ID)
 
-# Count unique values in the 'Year' column
+# 'Year' column
 count(data, Year)
 
-# Count unique values in the 'Education' column - Highest general school degree
+# 'Education' column - Highest general school degree
 count(data, Education)
+data$Education[is.na(data$Education)] <- 7
 
-# Count unique values in the MedianIncome
+# MedianIncome
 count(data, MedianIncome)
+summary(data$MedianIncome)
 
-# Count unique values in the 'IndividualIncome' column - Income
+# 'IndividualIncome' column - Income
 count(data, IndividualIncome)
+data$IndividualIncome[is.na(data$IndividualIncome)] <- 0
+summary(data$IndividualIncome)
+
+sum(is.na(data)) #Total number of NA values in the data frame
+summary(data)
 
 ########################
 ## Balanced Panel
 ########################
-
-
-
-
-
 
