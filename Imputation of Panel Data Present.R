@@ -5,6 +5,7 @@
 # Set Directory
 setwd("/Users/tipusultan/Documents/GitHub/Imputation-of-Panel-Data")
 
+
 ########################
 ## Data
 ########################
@@ -19,93 +20,93 @@ data = RawData[c("id", "year","EF310", "ind.median", "inc.ind")]
 colnames(data) <- c("ID", "Year", "Education", "MedianIncome", "IndividualIncome")
 summary(data)
 
-# 'ID' column
+#unique(data$variable) , to check the unique values
+
+# Count unique values in the 'ID' column
 count(data, ID)
 
-# 'Year' column
+# Count unique values in the 'Year' column
 count(data, Year)
-data <- subset(data, Year >= 2013 & Year <= 2023) # Filter the data to keep only rows where the 'Year' is between 2013 and 2023 inclusive
 
-# 'Education' column - Highest general school degree
+# Count unique values in the 'Education' column - Highest general school degree
 count(data, Education)
-data$Education[is.na(data$Education)] <- 7
 
-# MedianIncome
+# Count unique values in the MedianIncome
 count(data, MedianIncome)
-summary(data$MedianIncome)
 
-# 'IndividualIncome' column - Income
+# Count unique values in the 'IndividualIncome' column - Income
 count(data, IndividualIncome)
-data$IndividualIncome[is.na(data$IndividualIncome)] <- 0
-summary(data$IndividualIncome)
-
-sum(is.na(data)) #Total number of NA values in the data frame
-summary(data)
 
 ########################
-## Balanced Panel
+## Creating the Data
 ########################
-# Ensure the 'Year' column is numeric or integer
-data$Year <- as.numeric(data$Year)
 
-# Find IDs that are present in all years between 2013 and 2023
-years <- 2013:2023
-common_ids <- Reduce(intersect, lapply(years, function(year) {
-  unique(data$ID[data$Year == year])
-}))
+# Load required library
+library(plm)
 
-# Filter the data to keep only rows with common IDs
-BalancedPanel <- data[data$ID %in% common_ids, ]
+# Set parameters
+n <- 100  # Number of individuals
+T <- 5    # Number of time periods
 
-# Print the final data to check the result
-print(BalancedPanel)
+# Generate individual and time indices
+id <- rep(1:n, each = T)
+time <- rep(1:T, times = n)
 
-# Count the number of unique years each ID appears in
-id_year_count <- aggregate(Year ~ ID, data = BalancedPanel, 
-                           FUN = function(x) length(unique(x)))
+# Simulate individual-specific effects
+alpha_i <- rnorm(n, mean = 0, sd = 1)
 
-# Check if every ID appears in all the years (2013 to 2023)
-is_balanced_panel <- all(id_year_count$Year == length(2013:2023))
+# Simulate time-specific effects
+gamma_t <- rnorm(T, mean = 0, sd = 1)
 
-if (is_balanced_panel) {
-  print("The data is a balanced panel.")
-} else {
-  print("The data is not a balanced panel.")
-}
+# Generate random error term
+error <- rnorm(n*T, mean = 0, sd = 1)
 
-# Optionally, print the IDs that do not appear in all years
-unbalanced_ids <- id_year_count$ID[id_year_count$Year != length(2013:2023)]
-if (length(unbalanced_ids) > 0) {
-  print("IDs that do not appear in all years:")
-  print(unbalanced_ids)
-}
+# Simulate balanced panel data
+data_balanced <- data.frame(
+  id = id,
+  time = time,
+  x1 = rnorm(n*T),
+  x2 = rnorm(n*T),
+  y = 1 + 2 * rnorm(n*T) + 3 * rnorm(n*T) + alpha_i[id] + gamma_t[time] + error
+)
 
-########################
-## Unalanced Panel
-########################
-# The initial data is considered as a unbalanced panel data
-UnbalancedPanel <- data
+# Convert to panel data object
+balanced_panel_data <- pdata.frame(data_balanced, index = c("id", "time"))
 
-# Count the number of unique years each ID appears in
-id_year_count <- aggregate(Year ~ ID, data = UnbalancedPanel, 
-                           FUN = function(x) length(unique(x)))
+# View the first few rows of the balanced panel data
+head(balanced_panel_data)
 
-# Check if every ID appears in all the years (2013 to 2023)
-is_balanced_panel <- all(id_year_count$Year == length(2013:2023))
+# Set parameters
+n <- 100  # Number of individuals
+T <- 5    # Maximum number of time periods
 
-if (is_balanced_panel) {
-  print("The data is a balanced panel.")
-} else {
-  print("The data is not a balanced panel.")
-}
+# Generate random number of observations per individual
+obs_per_individual <- sample(2:T, n, replace = TRUE)
 
-# Optionally, print the IDs that do not appear in all years
-unbalanced_ids <- id_year_count$ID[id_year_count$Year != length(2013:2023)]
-if (length(unbalanced_ids) > 0) {
-  print("IDs that do not appear in all years:")
-  print(unbalanced_ids)
-}
+# Generate individual and time indices
+id <- rep(1:n, times = obs_per_individual)
+time <- unlist(lapply(obs_per_individual, function(x) sample(1:T, x)))
 
+# Simulate individual-specific effects
+alpha_i <- rnorm(n, mean = 0, sd = 1)
 
+# Simulate time-specific effects
+gamma_t <- rnorm(T, mean = 0, sd = 1)
 
+# Generate random error term
+error <- rnorm(length(id), mean = 0, sd = 1)
 
+# Simulate unbalanced panel data
+data_unbalanced <- data.frame(
+  id = id,
+  time = time,
+  x1 = rnorm(length(id)),
+  x2 = rnorm(length(id)),
+  y = 1 + 2 * rnorm(length(id)) + 3 * rnorm(length(id)) + alpha_i[id] + gamma_t[time] + error
+)
+
+# Convert to panel data object
+unbalanced_panel_data <- pdata.frame(data_unbalanced, index = c("id", "time"))
+
+# View the first few rows of the unbalanced panel data
+head(unbalanced_panel_data)
