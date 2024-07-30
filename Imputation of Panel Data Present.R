@@ -110,3 +110,31 @@ unbalanced_panel_data <- pdata.frame(data_unbalanced, index = c("id", "time"))
 
 # View the first few rows of the unbalanced panel data
 head(unbalanced_panel_data)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
