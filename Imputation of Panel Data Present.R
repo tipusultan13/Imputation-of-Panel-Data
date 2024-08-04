@@ -112,8 +112,25 @@ unbalanced_panel_data <- pdata.frame(data_unbalanced, index = c("id", "time"))
 head(unbalanced_panel_data)
 
 
+#### MCAR ####
+##############
 
+#### 50% ####
 
+p_mis_50 <- 0.50
+num_rows <- nrow(balanced_panel_data)  # Get the number of rows in balanced_panel_data
+mis_simulated_mcar_50 <- sample(1:num_rows, p_mis_50 * num_rows, replace = FALSE)    
+balanced_panel_data_mcar_50 <- balanced_panel_data
+balanced_panel_data_mcar_50[mis_simulated_mcar_50, 5] <- NA
+summary(balanced_panel_data_mcar_50)
+
+library(mice)
+
+# choose to impute datasets.
+balanced_panel_data_mcar_50_mice_imp <- mice(balanced_panel_data_mcar_50, m = 3, maxit = 1000, method = 'pmm')
+balanced_panel_data_mcar_50_pan_imp$imp$counts
+balanced_panel_data_mcar_50_mice_imp <- complete(balanced_panel_data_mcar_50_mice_imp,3)
+balanced_panel_data_mcar_50_mice_imp
 
 
 

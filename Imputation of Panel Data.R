@@ -43,8 +43,15 @@ sum(is.na(data)) #Total number of NA values in the data frame
 summary(data)
 
 ########################
+## Sampling
+########################
+
+
+
+########################
 ## Balanced Panel
 ########################
+
 # Ensure the 'Year' column is numeric or integer
 data$Year <- as.numeric(data$Year)
 
@@ -55,10 +62,20 @@ common_ids <- Reduce(intersect, lapply(years, function(year) {
 }))
 
 # Filter the data to keep only rows with common IDs
-balanced_panel_data <- data[data$ID %in% common_ids, ]
+panel_data <- data[data$ID %in% common_ids, ]
 
-# Print the final data to check the result
-print(balanced_panel_data)
+# Count occurrences of each ID
+id_counts <- panel_data %>%
+  count(ID)
+
+# Extract IDs with exactly 11 occurrences
+ids_with_11_occurrences <- id_counts %>%
+  filter(n == 11) %>%
+  pull(ID)
+
+# Filter the original dataset to include only rows with these IDs
+balanced_panel_data <- panel_data %>%
+  filter(ID %in% ids_with_11_occurrences)
 
 # Count the number of unique years each ID appears in
 id_year_count <- aggregate(Year ~ ID, data = balanced_panel_data, 
@@ -80,11 +97,35 @@ if (length(unbalanced_ids) > 0) {
   print(unbalanced_ids)
 }
 
+# Count occurrences of each ID
+id_counts <- balanced_panel_data %>%
+  count(ID)
+
+# Filter IDs that appear more than 11 times
+more_than_11 <- id_counts %>%
+  filter(n > 11)
+num_more_than_11 <- nrow(more_than_11)
+
+# Filter IDs that appear less than 11 times
+less_than_11 <- id_counts %>%
+  filter(n < 11)
+num_less_than_11 <- nrow(less_than_11)
+
+print(paste("Number of IDs appearing more than 11 times:", num_more_than_11))
+print(paste("Number of IDs appearing less than 11 times:", num_less_than_11))
+
+count(balanced_panel_data, Year)
+summary(balanced_panel_data)
+
 ########################
 ## Unalanced Panel
 ########################
-# The initial data is considered as a unbalanced panel data
-unbalanced_panel_data <- data
+# Sample 3455 observations for each year
+sampled_data <- data %>%
+  group_by(Year) %>%
+  sample_n(3455)
+
+unbalanced_panel_data <- sampled_data
 
 # Count the number of unique years each ID appears in
 id_year_count <- aggregate(Year ~ ID, data = unbalanced_panel_data, 
@@ -105,6 +146,9 @@ if (length(unbalanced_ids) > 0) {
   print("IDs that do not appear in all years:")
   print(unbalanced_ids)
 }
+
+count(unbalanced_panel_data, Year)
+summary(unbalanced_panel_data)
 
 ########################
 ## Missingness in Balanced Panel
@@ -436,6 +480,27 @@ summary(unbalanced_panel_data_mnar_10)
 # unbalanced_panel_data_mnar_30
 # unbalanced_panel_data_mnar_10
 
+######################
+## mice package
+######################
+
+library(mice)
+
+# choose to impute datasets.
+balanced_panel_data_mcar_50_mice_imp <- mice(balanced_panel_data_mcar_50, m = 3, maxit = 1000, method = 'pmm')
+balanced_panel_data_mcar_50_mice_imp <- complete(balanced_panel_data_mcar_50_mice_imp,3)
+balanced_panel_data_mcar_50_mice_imp
+
+
+
+
+
+
+
+
+
+
+
 
 ######################
 ## mitml package
@@ -450,18 +515,7 @@ names(type) <- colnames(balanced_panel_data_mcar_50)
 balanced_panel_data_mcar_50_pan_imp <- panImpute(balanced_panel_data_mcar_50, type = type, n.burn = 1000, n.iter = 100, m = 3)
 balanced_panel_data_mcar_50_pan_imp = mitmlComplete(balanced_panel_data_mcar_50_pan_imp, print = 3)
 balanced_panel_data_mcar_50_pan_imp
-
-######################
-## mice package
-######################
-
-library(mice)
-
-# choose to impute 3 dataset.
-balanced_panel_data_mcar_50_mice_imp <- mice(balanced_panel_data_mcar_50, m = 3, maxit = 1000, method = 'pmm')
 balanced_panel_data_mcar_50_pan_imp$imp$counts
-balanced_panel_data_mcar_50_mice_imp <- complete(balanced_panel_data_mcar_50_mice_imp,3)
-balanced_panel_data_mcar_50_mice_imp
 
 ############################
 ## LSTM Network
