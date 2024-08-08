@@ -487,9 +487,100 @@ summary(unbalanced_panel_data_mnar_10)
 library(mice)
 
 # choose to impute datasets.
+
+# Balanced Panel
+
+balanced_panel_data_mcar_50 <- balanced_panel_data_mcar_50[c("Year", "Education", "Age", "IndividualIncome")]
 balanced_panel_data_mcar_50_mice_imp <- mice(balanced_panel_data_mcar_50, m = 3, maxit = 1000, method = 'pmm')
 balanced_panel_data_mcar_50_mice_imp <- complete(balanced_panel_data_mcar_50_mice_imp,3)
 balanced_panel_data_mcar_50_mice_imp
+
+balanced_panel_data_mcar_30 <- balanced_panel_data_mcar_30[c("Year", "Education", "Age", "IndividualIncome")]
+balanced_panel_data_mcar_30_mice_imp <- mice(balanced_panel_data_mcar_30, m = 3, maxit = 1000, method = 'pmm')
+balanced_panel_data_mcar_30_mice_imp <- complete(balanced_panel_data_mcar_30_mice_imp,3)
+balanced_panel_data_mcar_30_mice_imp
+
+balanced_panel_data_mcar_10 <- balanced_panel_data_mcar_10[c("Year", "Education", "Age", "IndividualIncome")]
+balanced_panel_data_mcar_10_mice_imp <- mice(balanced_panel_data_mcar_10, m = 3, maxit = 1000, method = 'pmm')
+balanced_panel_data_mcar_10_mice_imp <- complete(balanced_panel_data_mcar_10_mice_imp,3)
+balanced_panel_data_mcar_10_mice_imp
+
+balanced_panel_data_mar_50 <- balanced_panel_data_mar_50[c("Year", "Education", "Age", "IndividualIncome")]
+balanced_panel_data_mar_50_mice_imp <- mice(balanced_panel_data_mar_50, m = 3, maxit = 1000, method = 'pmm')
+balanced_panel_data_mar_50_mice_imp <- complete(balanced_panel_data_mar_50_mice_imp,3)
+balanced_panel_data_mar_50_mice_imp
+
+balanced_panel_data_mar_30 <- balanced_panel_data_mar_30[c("Year", "Education", "Age", "IndividualIncome")]
+balanced_panel_data_mar_30_mice_imp <- mice(balanced_panel_data_mar_30, m = 3, maxit = 1000, method = 'pmm')
+balanced_panel_data_mar_30_mice_imp <- complete(balanced_panel_data_mar_30_mice_imp,3)
+balanced_panel_data_mar_30_mice_imp
+
+balanced_panel_data_mar_10 <- balanced_panel_data_mar_10[c("Year", "Education", "Age", "IndividualIncome")]
+balanced_panel_data_mar_10_mice_imp <- mice(balanced_panel_data_mar_10, m = 3, maxit = 1000, method = 'pmm')
+balanced_panel_data_mar_10_mice_imp <- complete(balanced_panel_data_mar_10_mice_imp,3)
+balanced_panel_data_mar_10_mice_imp
+
+balanced_panel_data_mnar_50 <- balanced_panel_data_mnar_50[c("Year", "Education", "Age", "IndividualIncome")]
+balanced_panel_data_mnar_50_mice_imp <- mice(balanced_panel_data_mnar_50, m = 3, maxit = 1000, method = 'pmm')
+balanced_panel_data_mnar_50_mice_imp <- complete(balanced_panel_data_mnar_50_mice_imp,3)
+balanced_panel_data_mnar_50_mice_imp
+
+balanced_panel_data_mnar_30 <- balanced_panel_data_mnar_30[c("Year", "Education", "Age", "IndividualIncome")]
+balanced_panel_data_mnar_30_mice_imp <- mice(balanced_panel_data_mnar_30, m = 3, maxit = 1000, method = 'pmm')
+balanced_panel_data_mnar_30_mice_imp <- complete(balanced_panel_data_mnar_30_mice_imp,3)
+balanced_panel_data_mnar_30_mice_imp
+
+balanced_panel_data_mnar_10 <- balanced_panel_data_mnar_10[c("Year", "Education", "Age", "IndividualIncome")]
+balanced_panel_data_mnar_10_mice_imp <- mice(balanced_panel_data_mnar_10, m = 3, maxit = 1000, method = 'pmm')
+balanced_panel_data_mnar_10_mice_imp <- complete(balanced_panel_data_mnar_10_mice_imp,3)
+balanced_panel_data_mnar_10_mice_imp
+
+# Unbalanced Panel
+
+unbalanced_panel_data_mcar_50 <- unbalanced_panel_data_mcar_50[c("Year", "Education", "Age", "IndividualIncome")]
+unbalanced_panel_data_mcar_50_mice_imp <- mice(unbalanced_panel_data_mcar_50, m = 3, maxit = 1000, method = 'pmm')
+unbalanced_panel_data_mcar_50_mice_imp <- complete(unbalanced_panel_data_mcar_50_mice_imp,3)
+unbalanced_panel_data_mcar_50_mice_imp
+
+unbalanced_panel_data_mcar_30 <- unbalanced_panel_data_mcar_30[c("Year", "Education", "Age", "IndividualIncome")]
+unbalanced_panel_data_mcar_30_mice_imp <- mice(unbalanced_panel_data_mcar_30, m = 3, maxit = 1000, method = 'pmm')
+unbalanced_panel_data_mcar_30_mice_imp <- complete(unbalanced_panel_data_mcar_30_mice_imp,3)
+unbalanced_panel_data_mcar_30_mice_imp
+
+unbalanced_panel_data_mcar_10 <- unbalanced_panel_data_mcar_10[c("Year", "Education", "Age", "IndividualIncome")]
+unbalanced_panel_data_mcar_10_mice_imp <- mice(unbalanced_panel_data_mcar_10, m = 3, maxit = 1000, method = 'pmm')
+unbalanced_panel_data_mcar_10_mice_imp <- complete(unbalanced_panel_data_mcar_10_mice_imp,3)
+unbalanced_panel_data_mcar_10_mice_imp
+
+unbalanced_panel_data_mar_50 <- unbalanced_panel_data_mar_50[c("Year", "Education", "Age", "IndividualIncome")]
+unbalanced_panel_data_mar_50_mice_imp <- mice(unbalanced_panel_data_mar_50, m = 3, maxit = 1000, method = 'pmm')
+unbalanced_panel_data_mar_50_mice_imp <- complete(unbalanced_panel_data_mar_50_mice_imp,3)
+unbalanced_panel_data_mar_50_mice_imp
+
+unbalanced_panel_data_mar_30 <- unbalanced_panel_data_mar_30[c("Year", "Education", "Age", "IndividualIncome")]
+unbalanced_panel_data_mar_30_mice_imp <- mice(unbalanced_panel_data_mar_30, m = 3, maxit = 1000, method = 'pmm')
+unbalanced_panel_data_mar_30_mice_imp <- complete(unbalanced_panel_data_mar_30_mice_imp,3)
+unbalanced_panel_data_mar_30_mice_imp
+
+unbalanced_panel_data_mar_10 <- unbalanced_panel_data_mar_10[c("Year", "Education", "Age", "IndividualIncome")]
+unbalanced_panel_data_mar_10_mice_imp <- mice(unbalanced_panel_data_mar_10, m = 3, maxit = 1000, method = 'pmm')
+unbalanced_panel_data_mar_10_mice_imp <- complete(unbalanced_panel_data_mar_10_mice_imp,3)
+unbalanced_panel_data_mar_10_mice_imp
+
+unbalanced_panel_data_mnar_50 <- unbalanced_panel_data_mnar_50[c("Year", "Education", "Age", "IndividualIncome")]
+unbalanced_panel_data_mnar_50_mice_imp <- mice(unbalanced_panel_data_mnar_50, m = 3, maxit = 1000, method = 'pmm')
+unbalanced_panel_data_mnar_50_mice_imp <- complete(unbalanced_panel_data_mnar_50_mice_imp,3)
+unbalanced_panel_data_mnar_50_mice_imp
+
+unbalanced_panel_data_mnar_30 <- unbalanced_panel_data_mnar_30[c("Year", "Education", "Age", "IndividualIncome")]
+unbalanced_panel_data_mnar_30_mice_imp <- mice(unbalanced_panel_data_mnar_30, m = 3, maxit = 1000, method = 'pmm')
+unbalanced_panel_data_mnar_30_mice_imp <- complete(unbalanced_panel_data_mnar_30_mice_imp,3)
+unbalanced_panel_data_mnar_30_mice_imp
+
+unbalanced_panel_data_mnar_10 <- unbalanced_panel_data_mnar_10[c("Year", "Education", "Age", "IndividualIncome")]
+unbalanced_panel_data_mnar_10_mice_imp <- mice(unbalanced_panel_data_mnar_10, m = 3, maxit = 1000, method = 'pmm')
+unbalanced_panel_data_mnar_10_mice_imp <- complete(unbalanced_panel_data_mnar_10_mice_imp,3)
+unbalanced_panel_data_mnar_10_mice_imp
 
 
 
