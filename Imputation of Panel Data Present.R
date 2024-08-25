@@ -124,13 +124,29 @@ balanced_panel_data_mcar_50 <- balanced_panel_data
 balanced_panel_data_mcar_50[mis_simulated_mcar_50, 5] <- NA
 summary(balanced_panel_data_mcar_50)
 
+## Random Forest ##
+
 library(mice)
 
-# choose to impute datasets.
-balanced_panel_data_mcar_50_mice_imp <- mice(balanced_panel_data_mcar_50, m = 3, maxit = 1000, method = 'pmm')
-balanced_panel_data_mcar_50_pan_imp$imp$counts
-balanced_panel_data_mcar_50_mice_imp <- complete(balanced_panel_data_mcar_50_mice_imp,3)
-balanced_panel_data_mcar_50_mice_imp
+# Define imputation methods, using Random Forest
+imputation_methods <- c("Year" = "", "Education" = "", "Age" = "", "IndividualIncome" = "rf")
+
+# Run the mice function for imputation
+balanced_panel_data_mcar_50_temp <- balanced_panel_data_mcar_50[c("Year", "Education", "Age", "IndividualIncome")]
+balanced_panel_data_mcar_50_mice_imp <- mice(balanced_panel_data_mcar_50_temp, method = imputation_methods, m = 3, maxit = 500)
+model <- with(balanced_panel_data_mcar_50_mice_imp, lm(IndividualIncome ~ Education + Age))
+balanced_panel_data_mcar_50_mice_imp_pooled_results <- pool(model)
+summary(balanced_panel_data_mcar_50_mice_imp_pooled_results)
+
+# All the imputed datasets:
+imputed_data <- complete(balanced_panel_data_mcar_50_mice_imp)
+imputed_data_1 <- complete(balanced_panel_data_mcar_50_mice_imp, 1)
+imputed_data_2 <- complete(balanced_panel_data_mcar_50_mice_imp, 2)
+imputed_data_3 <- complete(balanced_panel_data_mcar_50_mice_imp, 3)
+View(imputed_data)
+View(imputed_data_1)
+View(imputed_data_2)
+View(imputed_data_3)
 
 
 

@@ -11,6 +11,7 @@ setwd("/Users/tipusultan/Documents/GitHub/Imputation-of-Panel-Data")
 
 library(dplyr)
 library(readxl)
+library(ggplot2)
 
 # Load and clean the data
 RawData <- readRDS("population.RDS")
@@ -24,22 +25,52 @@ count(data, ID)
 
 # 'Year' column
 count(data, Year)
-data <- subset(data, Year >= 2013 & Year <= 2023) # Filter the data to keep only rows where the 'Year' is between 2013 and 2023 inclusive
+# Filter the data to keep only rows where the 'Year' is between 2013 and 2023 inclusive
+data <- subset(data, Year >= 2013 & Year <= 2023)
 
 # 'Education' column - Highest general school degree
 count(data, Education)
 data$Education[is.na(data$Education)] <- 7
 
-# MedianIncome
+# Age
 count(data, Age)
 summary(data$Age)
 
+# Plot the density curve for Age
+ggplot(data, aes(x = Age)) +
+  geom_density(fill = "blue", alpha = 0.5) +
+  labs(title = "Density Curve of Age",
+       x = "Age",
+       y = "Density") +
+  theme_minimal()
+
 # 'IndividualIncome' column - Income
+summary(data$IndividualIncome)
 count(data, IndividualIncome)
 data$IndividualIncome[is.na(data$IndividualIncome)] <- 0
 summary(data$IndividualIncome)
 
+# Plot the histogram for IndividualIncome
+ggplot(data, aes(x = IndividualIncome)) +
+  geom_histogram(binwidth = 5000, fill = "blue", color = "black", alpha = 0.7) +
+  labs(title = "Histogram of Individual Income",
+       x = "Individual Income",
+       y = "Frequency") +
+  theme_minimal()
+
+# Apply log transformation to IndividualIncome (adding 1 to avoid log(0))
+data$LogIndividualIncome <- log(data$IndividualIncome + 1)
+
+# Plot the histogram with the log-transformed IndividualIncome
+ggplot(data, aes(x = LogIndividualIncome)) +
+  geom_histogram(binwidth = 0.2, fill = "blue", color = "black", alpha = 0.7) +
+  labs(title = "Histogram of Log-Transformed Individual Income",
+       x = "Log of Individual Income",
+       y = "Frequency") +
+  theme_minimal()
+
 sum(is.na(data)) #Total number of NA values in the data frame
+data <- data[c("ID", "Year", "Education", "Age", "IndividualIncome")]
 summary(data)
 
 ########################
@@ -154,6 +185,8 @@ summary(unbalanced_panel_data)
 ## Missingness in Balanced Panel
 ########################
 
+library(VIM)
+
 #### MCAR ####
 ##############
 
@@ -166,6 +199,16 @@ balanced_panel_data_mcar_50 <- balanced_panel_data
 balanced_panel_data_mcar_50[mis_simulated_mcar_50, 5] <- NA
 summary(balanced_panel_data_mcar_50)
 
+# Visualize the missing data pattern using the VIM package
+aggr(balanced_panel_data_mcar_50, 
+     col = c('navyblue', 'red'), 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     labels = names(balanced_panel_data_mcar_50), 
+     cex.axis = .7, 
+     gap = 3, 
+     ylab = c("Missing data", "Pattern"))
+
 #### 30% ####
 
 p_mis_30 <- 0.30
@@ -174,6 +217,16 @@ mis_simulated_mcar_30 <- sample(1:num_rows, p_mis_30 * num_rows, replace = FALSE
 balanced_panel_data_mcar_30 <- balanced_panel_data
 balanced_panel_data_mcar_30[mis_simulated_mcar_30, 5] <- NA
 summary(balanced_panel_data_mcar_30)
+
+# Visualize the missing data pattern
+aggr(balanced_panel_data_mcar_30, 
+     col = c('navyblue', 'red'), 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     labels = names(balanced_panel_data_mcar_30), 
+     cex.axis = .7, 
+     gap = 3, 
+     ylab = c("Missing data", "Pattern"))
 
 #### 30% ####
 
@@ -184,6 +237,16 @@ balanced_panel_data_mcar_10 <- balanced_panel_data
 balanced_panel_data_mcar_10[mis_simulated_mcar_10, 5] <- NA
 summary(balanced_panel_data_mcar_10)
 
+# Visualize the missing data pattern
+aggr(balanced_panel_data_mcar_10, 
+     col = c('navyblue', 'red'), 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     labels = names(balanced_panel_data_mcar_10), 
+     cex.axis = .7, 
+     gap = 3, 
+     ylab = c("Missing data", "Pattern"))
+
 #### MAR ####
 #############
 
@@ -193,10 +256,9 @@ balanced_panel_data_mar_50 <- balanced_panel_data
 set.seed(123)
 p_mis_50 <- 0.5  # 50% missingness
 
-# Model missingness via linear regression model
 # Depending on Education, Age, and random error
-mis_simulated_mar_50 <- 0.5 + 2 * balanced_panel_data_mar_50$Education - 
-  0.7 * balanced_panel_data_mar_50$Age + 
+mis_simulated_mar_50 <- 0.5 + 0.1 * balanced_panel_data_mar_50$Education + 
+  0.2 * balanced_panel_data_mar_50$Age + 
   rnorm(nrow(balanced_panel_data_mar_50), 0, 3)
 
 # All below the 50% quantile are set to missing
@@ -211,6 +273,16 @@ balanced_panel_data_mar_50$IndividualIncome[mis_simulated_mar_50] <- NA
 # Summary of IndividualIncome after introducing missingness
 summary(balanced_panel_data_mar_50)
 
+# Visualize the missing data pattern
+aggr(balanced_panel_data_mar_50, 
+     col = c('navyblue', 'red'), 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     labels = names(balanced_panel_data_mar_50), 
+     cex.axis = .7, 
+     gap = 3, 
+     ylab = c("Missing data", "Pattern"))
+
 
 #### 30% ####
 
@@ -218,10 +290,9 @@ balanced_panel_data_mar_30 <- balanced_panel_data
 set.seed(123)
 p_mis_50 <- 0.3  # 30% missingness
 
-# Model missingness via linear regression model
 # Depending on Education, Age, and random error
-mis_simulated_mar_30 <- 0.5 + 2 * balanced_panel_data_mar_30$Education - 
-  0.7 * balanced_panel_data_mar_30$Age + 
+mis_simulated_mar_30 <- 0.7 + 0.1 * balanced_panel_data_mar_30$Education + 
+  0.2 * balanced_panel_data_mar_30$Age + 
   rnorm(nrow(balanced_panel_data_mar_30), 0, 3)
 
 # All below the 50% quantile are set to missing
@@ -236,6 +307,15 @@ balanced_panel_data_mar_30$IndividualIncome[mis_simulated_mar_30] <- NA
 # Summary of IndividualIncome after introducing missingness
 summary(balanced_panel_data_mar_30)
 
+# Visualize the missing data pattern
+aggr(balanced_panel_data_mar_30, 
+     col = c('navyblue', 'red'), 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     labels = names(balanced_panel_data_mar_30), 
+     cex.axis = .7, 
+     gap = 3, 
+     ylab = c("Missing data", "Pattern"))
 
 #### 10% ####
 
@@ -243,10 +323,9 @@ balanced_panel_data_mar_10 <- balanced_panel_data
 set.seed(123)
 p_mis_50 <- 0.1  # 10% missingness
 
-# Model missingness via linear regression model
 # Depending on Education, Age, and random error
-mis_simulated_mar_10 <- 0.5 + 2 * balanced_panel_data_mar_10$Education - 
-  0.7 * balanced_panel_data_mar_10$Age + 
+mis_simulated_mar_10 <- 0.1 + 0.1 * balanced_panel_data_mar_10$Education + 
+  0.2 * balanced_panel_data_mar_10$Age + 
   rnorm(nrow(balanced_panel_data_mar_10), 0, 3)
 
 # All below the 50% quantile are set to missing
@@ -261,6 +340,16 @@ balanced_panel_data_mar_10$IndividualIncome[mis_simulated_mar_10] <- NA
 # Summary of IndividualIncome after introducing missingness
 summary(balanced_panel_data_mar_10)
 
+# Visualize the missing data pattern
+aggr(balanced_panel_data_mar_10, 
+     col = c('navyblue', 'red'), 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     labels = names(balanced_panel_data_mar_10), 
+     cex.axis = .7, 
+     gap = 3, 
+     ylab = c("Missing data", "Pattern"))
+
 #### MNAR ####
 ##############
 
@@ -269,40 +358,67 @@ summary(balanced_panel_data_mar_10)
 
 p_mis_50 <- .50
 balanced_panel_data_mnar_50 <- balanced_panel_data
-# model missingness by logistic regression (probit):
 # the missing of a value now also depends on IndividualIncome itself
-mis_simulated_mnar_50 <-0.5 + 1 * balanced_panel_data_mnar_50$Education - 
-  0.7 * balanced_panel_data_mnar_50$Age - 
-  5 * balanced_panel_data_mnar_50$IndividualIncome + rnorm(nrow(balanced_panel_data), 0, 3)
+mis_simulated_mnar_50 <- 0.5 + .2 * balanced_panel_data_mnar_50$Education + 
+  0.1 * balanced_panel_data_mnar_50$Age + 
+  0.5 * balanced_panel_data_mnar_50$IndividualIncome + rnorm(nrow(balanced_panel_data), 0, 3)
 mis_simulated_mnar_50 <- mis_simulated_mnar_50 < quantile(mis_simulated_mnar_50, p_mis_50)
 balanced_panel_data_mnar_50$IndividualIncome[mis_simulated_mnar_50] <- NA
 summary(balanced_panel_data_mnar_50)
+
+# Visualize the missing data pattern
+aggr(balanced_panel_data_mnar_50, 
+     col = c('navyblue', 'red'), 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     labels = names(balanced_panel_data_mnar_50), 
+     cex.axis = .7, 
+     gap = 3, 
+     ylab = c("Missing data", "Pattern"))
 
 #### 30% ####
 
 p_mis_30 <- .30
 balanced_panel_data_mnar_30 <- balanced_panel_data
-# model missingness by logistic regression (probit):
 # the missing of a value now also depends on IndividualIncome itself
-mis_simulated_mnar_30 <-0.5 + 1 * balanced_panel_data_mnar_30$Education - 
-  0.7 * balanced_panel_data_mnar_30$Age - 
-  5 * balanced_panel_data_mnar_30$IndividualIncome + rnorm(nrow(balanced_panel_data), 0, 3)
+mis_simulated_mnar_30 <- 0.7 + 0.1 * balanced_panel_data_mnar_30$Education + 
+  0.2 * balanced_panel_data_mnar_30$Age + 
+  0.5 * balanced_panel_data_mnar_30$IndividualIncome + rnorm(nrow(balanced_panel_data), 0, 3)
 mis_simulated_mnar_30 <- mis_simulated_mnar_30 < quantile(mis_simulated_mnar_30, p_mis_30)
 balanced_panel_data_mnar_30$IndividualIncome[mis_simulated_mnar_30] <- NA
 summary(balanced_panel_data_mnar_30)
+
+# Visualize the missing data pattern
+aggr(balanced_panel_data_mnar_30, 
+     col = c('navyblue', 'red'), 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     labels = names(balanced_panel_data_mnar_30), 
+     cex.axis = .7, 
+     gap = 3, 
+     ylab = c("Missing data", "Pattern"))
 
 #### 10% ####
 
 p_mis_10 <- .10
 balanced_panel_data_mnar_10 <- balanced_panel_data
-# model missingness by logistic regression (probit):
 # the missing of a value now also depends on IndividualIncome itself
-mis_simulated_mnar_10 <-0.5 + 1 * balanced_panel_data_mnar_10$Education - 
-  0.7 * balanced_panel_data_mnar_10$Age - 
-  5 * balanced_panel_data_mnar_10$IndividualIncome + rnorm(nrow(balanced_panel_data), 0, 3)
+mis_simulated_mnar_10 <- 0.1 + 0.1 * balanced_panel_data_mnar_10$Education + 
+  0.2 * balanced_panel_data_mnar_10$Age + 
+  0.5 * balanced_panel_data_mnar_10$IndividualIncome + rnorm(nrow(balanced_panel_data), 0, 3)
 mis_simulated_mnar_10 <- mis_simulated_mnar_10 < quantile(mis_simulated_mnar_10, p_mis_10)
 balanced_panel_data_mnar_10$IndividualIncome[mis_simulated_mnar_10] <- NA
 summary(balanced_panel_data_mnar_10)
+
+# Visualize the missing data pattern
+aggr(balanced_panel_data_mnar_10, 
+     col = c('navyblue', 'red'), 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     labels = names(balanced_panel_data_mnar_10), 
+     cex.axis = .7, 
+     gap = 3, 
+     ylab = c("Missing data", "Pattern"))
 
 ########################
 ## Missingness in Unalanced Panel
@@ -320,6 +436,16 @@ unbalanced_panel_data_mcar_50 <- unbalanced_panel_data
 unbalanced_panel_data_mcar_50[mis_simulated_mcar_50, 5] <- NA
 summary(unbalanced_panel_data_mcar_50)
 
+# Visualize the missing data pattern
+aggr(unbalanced_panel_data_mcar_50, 
+     col = c('navyblue', 'red'), 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     labels = names(unbalanced_panel_data_mcar_50), 
+     cex.axis = .7, 
+     gap = 3, 
+     ylab = c("Missing data", "Pattern"))
+
 #### 30% ####
 
 p_mis_30 <- 0.30
@@ -328,6 +454,16 @@ mis_simulated_mcar_30 <- sample(1:num_rows, p_mis_30 * num_rows, replace = FALSE
 unbalanced_panel_data_mcar_30 <- unbalanced_panel_data
 unbalanced_panel_data_mcar_30[mis_simulated_mcar_30, 5] <- NA
 summary(unbalanced_panel_data_mcar_30)
+
+# Visualize the missing data pattern
+aggr(unbalanced_panel_data_mcar_30, 
+     col = c('navyblue', 'red'), 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     labels = names(unbalanced_panel_data_mcar_30), 
+     cex.axis = .7, 
+     gap = 3, 
+     ylab = c("Missing data", "Pattern"))
 
 #### 10% ####
 
@@ -338,6 +474,16 @@ unbalanced_panel_data_mcar_10 <- unbalanced_panel_data
 unbalanced_panel_data_mcar_10[mis_simulated_mcar_10, 5] <- NA
 summary(unbalanced_panel_data_mcar_10)
 
+# Visualize the missing data pattern
+aggr(unbalanced_panel_data_mcar_10, 
+     col = c('navyblue', 'red'), 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     labels = names(unbalanced_panel_data_mcar_10), 
+     cex.axis = .7, 
+     gap = 3, 
+     ylab = c("Missing data", "Pattern"))
+
 #### MAR ####
 #############
 
@@ -346,10 +492,9 @@ unbalanced_panel_data_mar_50 <- unbalanced_panel_data
 set.seed(123)
 p_mis_50 <- 0.5  # 50% missingness
 
-# Model missingness via linear regression model
 # Depending on Education, Age, and random error
-mis_simulated_mar_50 <- 0.5 + 2 * unbalanced_panel_data_mar_50$Education - 
-  0.7 * unbalanced_panel_data_mar_50$Age + 
+mis_simulated_mar_50 <- 0.5 + 0.1 * unbalanced_panel_data_mar_50$Education + 
+  0.2 * unbalanced_panel_data_mar_50$Age + 
   rnorm(nrow(unbalanced_panel_data_mar_50), 0, 3)
 
 # All below the 50% quantile are set to missing
@@ -364,16 +509,24 @@ unbalanced_panel_data_mar_50$IndividualIncome[mis_simulated_mar_50] <- NA
 # Summary of IndividualIncome after introducing missingness
 summary(unbalanced_panel_data_mar_50)
 
+# Visualize the missing data pattern
+aggr(unbalanced_panel_data_mar_50, 
+     col = c('navyblue', 'red'), 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     labels = names(unbalanced_panel_data_mar_50), 
+     cex.axis = .7, 
+     gap = 3, 
+     ylab = c("Missing data", "Pattern"))
 
 #### 30% ####
 unbalanced_panel_data_mar_30 <- unbalanced_panel_data
 set.seed(123)
 p_mis_50 <- 0.3  # 30% missingness
 
-# Model missingness via linear regression model
 # Depending on Education, Age, and random error
-mis_simulated_mar_30 <- 0.5 + 2 * unbalanced_panel_data_mar_30$Education - 
-  0.7 * unbalanced_panel_data_mar_30$Age + 
+mis_simulated_mar_30 <- 0.7 + 0.1 * unbalanced_panel_data_mar_30$Education + 
+  0.2 * unbalanced_panel_data_mar_30$Age + 
   rnorm(nrow(unbalanced_panel_data_mar_30), 0, 3)
 
 # All below the 50% quantile are set to missing
@@ -388,6 +541,15 @@ unbalanced_panel_data_mar_30$IndividualIncome[mis_simulated_mar_30] <- NA
 # Summary of IndividualIncome after introducing missingness
 summary(unbalanced_panel_data_mar_30)
 
+# Visualize the missing data pattern
+aggr(unbalanced_panel_data_mar_30, 
+     col = c('navyblue', 'red'), 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     labels = names(unbalanced_panel_data_mar_30), 
+     cex.axis = .7, 
+     gap = 3, 
+     ylab = c("Missing data", "Pattern"))
 
 #### 10% ####
 
@@ -395,10 +557,9 @@ unbalanced_panel_data_mar_10 <- unbalanced_panel_data
 set.seed(123)
 p_mis_50 <- 0.1  # 10% missingness
 
-# Model missingness via linear regression model
 # Depending on Education, Age, and random error
-mis_simulated_mar_10 <- 0.5 + 2 * unbalanced_panel_data_mar_10$Education - 
-  0.7 * unbalanced_panel_data_mar_10$Age + 
+mis_simulated_mar_10 <- 0.1 + 0.1 * unbalanced_panel_data_mar_10$Education + 
+  0.2 * unbalanced_panel_data_mar_10$Age + 
   rnorm(nrow(unbalanced_panel_data_mar_10), 0, 3)
 
 # All below the 50% quantile are set to missing
@@ -413,6 +574,16 @@ unbalanced_panel_data_mar_10$IndividualIncome[mis_simulated_mar_10] <- NA
 # Summary of IndividualIncome after introducing missingness
 summary(unbalanced_panel_data_mar_10)
 
+# Visualize the missing data pattern
+aggr(unbalanced_panel_data_mar_30, 
+     col = c('navyblue', 'red'), 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     labels = names(unbalanced_panel_data_mar_10), 
+     cex.axis = .7, 
+     gap = 3, 
+     ylab = c("Missing data", "Pattern"))
+
 #### MNAR ####
 ##############
 
@@ -421,45 +592,144 @@ summary(unbalanced_panel_data_mar_10)
 
 p_mis_50 <- .50
 unbalanced_panel_data_mnar_50 <- unbalanced_panel_data
-# model missingness by logistic regression (probit):
 # the missing of a value now also depends on IndividualIncome itself
-mis_simulated_mnar_50 <-0.5 + 1 * unbalanced_panel_data_mnar_50$Education - 
-  0.7 * unbalanced_panel_data_mnar_50$Age - 
-  5 * unbalanced_panel_data_mnar_50$IndividualIncome + rnorm(nrow(unbalanced_panel_data), 0, 3)
+mis_simulated_mnar_50 <- 0.5 + 0.1 * unbalanced_panel_data_mnar_50$Education + 
+  0.2 * unbalanced_panel_data_mnar_50$Age + 
+  0.5 * unbalanced_panel_data_mnar_50$IndividualIncome + rnorm(nrow(unbalanced_panel_data), 0, 3)
 mis_simulated_mnar_50 <- mis_simulated_mnar_50 < quantile(mis_simulated_mnar_50, p_mis_50)
 unbalanced_panel_data_mnar_50$IndividualIncome[mis_simulated_mnar_50] <- NA
 summary(unbalanced_panel_data_mnar_50)
+
+# Visualize the missing data pattern
+aggr(unbalanced_panel_data_mnar_50, 
+     col = c('navyblue', 'red'), 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     labels = names(unbalanced_panel_data_mnar_50), 
+     cex.axis = .7, 
+     gap = 3, 
+     ylab = c("Missing data", "Pattern"))
 
 #### 30% ####
 
 p_mis_30 <- .30
 unbalanced_panel_data_mnar_30 <- unbalanced_panel_data
-# model missingness by logistic regression (probit):
 # the missing of a value now also depends on IndividualIncome itself
-mis_simulated_mnar_30 <-0.5 + 1 * unbalanced_panel_data_mnar_30$Education - 
-  0.7 * unbalanced_panel_data_mnar_30$Age - 
-  5 * unbalanced_panel_data_mnar_30$IndividualIncome + rnorm(nrow(unbalanced_panel_data), 0, 3)
+mis_simulated_mnar_30 <-0.7 + 0.1 * unbalanced_panel_data_mnar_30$Education + 
+  0.2 * unbalanced_panel_data_mnar_30$Age + 
+  0.5 * unbalanced_panel_data_mnar_30$IndividualIncome + rnorm(nrow(unbalanced_panel_data), 0, 3)
 mis_simulated_mnar_30 <- mis_simulated_mnar_30 < quantile(mis_simulated_mnar_30, p_mis_30)
 unbalanced_panel_data_mnar_30$IndividualIncome[mis_simulated_mnar_30] <- NA
 summary(unbalanced_panel_data_mnar_30)
+
+# Visualize the missing data pattern
+aggr(unbalanced_panel_data_mnar_30, 
+     col = c('navyblue', 'red'), 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     labels = names(unbalanced_panel_data_mnar_30), 
+     cex.axis = .7, 
+     gap = 3, 
+     ylab = c("Missing data", "Pattern"))
 
 #### 10% ####
 
 p_mis_10 <- .10
 unbalanced_panel_data_mnar_10 <- unbalanced_panel_data
-# model missingness by logistic regression (probit):
 # the missing of a value now also depends on IndividualIncome itself
-mis_simulated_mnar_10 <-0.5 + 1 * unbalanced_panel_data_mnar_10$Education - 
-  0.7 * unbalanced_panel_data_mnar_10$Age - 
-  5 * unbalanced_panel_data_mnar_10$IndividualIncome + rnorm(nrow(unbalanced_panel_data), 0, 3)
+mis_simulated_mnar_10 <- 0.1 + 0.1 * unbalanced_panel_data_mnar_10$Education + 
+  0.2 * unbalanced_panel_data_mnar_10$Age + 
+  0.5 * unbalanced_panel_data_mnar_10$IndividualIncome + rnorm(nrow(unbalanced_panel_data), 0, 3)
 mis_simulated_mnar_10 <- mis_simulated_mnar_10 < quantile(mis_simulated_mnar_10, p_mis_10)
 unbalanced_panel_data_mnar_10$IndividualIncome[mis_simulated_mnar_10] <- NA
 summary(unbalanced_panel_data_mnar_10)
 
+# Visualize the missing data pattern
+aggr(unbalanced_panel_data_mnar_10, 
+     col = c('navyblue', 'red'), 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     labels = names(unbalanced_panel_data_mnar_10), 
+     cex.axis = .7, 
+     gap = 3, 
+     ylab = c("Missing data", "Pattern"))
 
 ###################
-### Data Sets
+### Data Sets Overview and Formating
 ###################
+
+## Format Vriable to Their Originl Format
+balanced_panel_data_mcar_50$ID <- as.factor(balanced_panel_data_mcar_50$ID)
+balanced_panel_data_mcar_50$Year <- as.factor(balanced_panel_data_mcar_50$Year)
+balanced_panel_data_mcar_50$Education <- as.factor(balanced_panel_data_mcar_50$Education)
+
+balanced_panel_data_mcar_30$ID <- as.factor(balanced_panel_data_mcar_30$ID)
+balanced_panel_data_mcar_30$Year <- as.factor(balanced_panel_data_mcar_30$Year)
+balanced_panel_data_mcar_30$Education <- as.factor(balanced_panel_data_mcar_30$Education)
+
+balanced_panel_data_mcar_10$ID <- as.factor(balanced_panel_data_mcar_10$ID)
+balanced_panel_data_mcar_10$Year <- as.factor(balanced_panel_data_mcar_10$Year)
+balanced_panel_data_mcar_10$Education <- as.factor(balanced_panel_data_mcar_10$Education)
+
+balanced_panel_data_mar_50$ID <- as.factor(balanced_panel_data_mar_50$ID)
+balanced_panel_data_mar_50$Year <- as.factor(balanced_panel_data_mar_50$Year)
+balanced_panel_data_mar_50$Education <- as.factor(balanced_panel_data_mar_50$Education)
+
+balanced_panel_data_mar_30$ID <- as.factor(balanced_panel_data_mar_30$ID)
+balanced_panel_data_mar_30$Year <- as.factor(balanced_panel_data_mar_30$Year)
+balanced_panel_data_mar_30$Education <- as.factor(balanced_panel_data_mar_30$Education)
+
+balanced_panel_data_mar_10$ID <- as.factor(balanced_panel_data_mar_10$ID)
+balanced_panel_data_mar_10$Year <- as.factor(balanced_panel_data_mar_10$Year)
+balanced_panel_data_mar_10$Education <- as.factor(balanced_panel_data_mar_10$Education)
+
+balanced_panel_data_mnar_50$ID <- as.factor(balanced_panel_data_mnar_50$ID)
+balanced_panel_data_mnar_50$Year <- as.factor(balanced_panel_data_mnar_50$Year)
+balanced_panel_data_mnar_50$Education <- as.factor(balanced_panel_data_mnar_50$Education)
+
+balanced_panel_data_mnar_30$ID <- as.factor(balanced_panel_data_mnar_30$ID)
+balanced_panel_data_mnar_30$Year <- as.factor(balanced_panel_data_mnar_30$Year)
+balanced_panel_data_mnar_30$Education <- as.factor(balanced_panel_data_mnar_30$Education)
+
+balanced_panel_data_mnar_10$ID <- as.factor(balanced_panel_data_mnar_10$ID)
+balanced_panel_data_mnar_10$Year <- as.factor(balanced_panel_data_mnar_10$Year)
+balanced_panel_data_mnar_10$Education <- as.factor(balanced_panel_data_mnar_10$Education)
+
+unbalanced_panel_data_mcar_50$ID <- as.factor(unbalanced_panel_data_mcar_50$ID)
+unbalanced_panel_data_mcar_50$Year <- as.factor(unbalanced_panel_data_mcar_50$Year)
+unbalanced_panel_data_mcar_50$Education <- as.factor(unbalanced_panel_data_mcar_50$Education)
+
+unbalanced_panel_data_mcar_30$ID <- as.factor(unbalanced_panel_data_mcar_30$ID)
+unbalanced_panel_data_mcar_30$Year <- as.factor(unbalanced_panel_data_mcar_30$Year)
+unbalanced_panel_data_mcar_30$Education <- as.factor(unbalanced_panel_data_mcar_30$Education)
+
+unbalanced_panel_data_mcar_10$ID <- as.factor(unbalanced_panel_data_mcar_10$ID)
+unbalanced_panel_data_mcar_10$Year <- as.factor(unbalanced_panel_data_mcar_10$Year)
+unbalanced_panel_data_mcar_10$Education <- as.factor(unbalanced_panel_data_mcar_10$Education)
+
+unbalanced_panel_data_mar_50$ID <- as.factor(unbalanced_panel_data_mar_50$ID)
+unbalanced_panel_data_mar_50$Year <- as.factor(unbalanced_panel_data_mar_50$Year)
+unbalanced_panel_data_mar_50$Education <- as.factor(unbalanced_panel_data_mar_50$Education)
+
+unbalanced_panel_data_mar_30$ID <- as.factor(unbalanced_panel_data_mar_30$ID)
+unbalanced_panel_data_mar_30$Year <- as.factor(unbalanced_panel_data_mar_30$Year)
+unbalanced_panel_data_mar_30$Education <- as.factor(unbalanced_panel_data_mar_30$Education)
+
+unbalanced_panel_data_mar_10$ID <- as.factor(unbalanced_panel_data_mar_10$ID)
+unbalanced_panel_data_mar_10$Year <- as.factor(unbalanced_panel_data_mar_10$Year)
+unbalanced_panel_data_mar_10$Education <- as.factor(unbalanced_panel_data_mar_10$Education)
+
+unbalanced_panel_data_mnar_50$ID <- as.factor(unbalanced_panel_data_mnar_50$ID)
+unbalanced_panel_data_mnar_50$Year <- as.factor(unbalanced_panel_data_mnar_50$Year)
+unbalanced_panel_data_mnar_50$Education <- as.factor(unbalanced_panel_data_mnar_50$Education)
+
+unbalanced_panel_data_mnar_30$ID <- as.factor(unbalanced_panel_data_mnar_30$ID)
+unbalanced_panel_data_mnar_30$Year <- as.factor(unbalanced_panel_data_mnar_30$Year)
+unbalanced_panel_data_mnar_30$Education <- as.factor(unbalanced_panel_data_mnar_30$Education)
+
+unbalanced_panel_data_mnar_10$ID <- as.factor(unbalanced_panel_data_mnar_10$ID)
+unbalanced_panel_data_mnar_10$Year <- as.factor(unbalanced_panel_data_mnar_10$Year)
+unbalanced_panel_data_mnar_10$Education <- as.factor(unbalanced_panel_data_mnar_10$Education)
 
 # balanced_panel_data_mcar_50
 # balanced_panel_data_mcar_30
@@ -486,112 +756,110 @@ summary(unbalanced_panel_data_mnar_10)
 
 library(mice)
 
-# choose to impute datasets.
+# Run the mice function for imputation
+balanced_panel_data_mcar_50_temp <- balanced_panel_data_mcar_50[c("Year", "Education", "Age", "IndividualIncome")]
+balanced_panel_data_mcar_50_mice_imp <- mice(balanced_panel_data_mcar_50_temp, method = 'pmm', m = 3, maxit = 500)
+model <- with(balanced_panel_data_mcar_50_mice_imp, lm(IndividualIncome ~ Education + Age))
+balanced_panel_data_mcar_50_mice_imp_pooled_results <- pool(model)
+summary(balanced_panel_data_mcar_50_mice_imp_pooled_results)
 
-# Balanced Panel
+# All the imputed datasets:
+imputed_data <- complete(balanced_panel_data_mcar_50_mice_imp)
+imputed_data_1 <- complete(balanced_panel_data_mcar_50_mice_imp, 1)
+imputed_data_2 <- complete(balanced_panel_data_mcar_50_mice_imp, 2)
+imputed_data_3 <- complete(balanced_panel_data_mcar_50_mice_imp, 3)
+View(imputed_data)
+View(imputed_data_1)
+View(imputed_data_2)
+View(imputed_data_3)
 
-balanced_panel_data_mcar_50 <- balanced_panel_data_mcar_50[c("Year", "Education", "Age", "IndividualIncome")]
-balanced_panel_data_mcar_50_mice_imp <- mice(balanced_panel_data_mcar_50, m = 3, maxit = 1000, method = 'pmm')
-balanced_panel_data_mcar_50_mice_imp <- complete(balanced_panel_data_mcar_50_mice_imp,3)
-balanced_panel_data_mcar_50_mice_imp
-
-balanced_panel_data_mcar_30 <- balanced_panel_data_mcar_30[c("Year", "Education", "Age", "IndividualIncome")]
-balanced_panel_data_mcar_30_mice_imp <- mice(balanced_panel_data_mcar_30, m = 3, maxit = 1000, method = 'pmm')
+# Rest of the datasets
+balanced_panel_data_mcar_30_temp <- balanced_panel_data_mcar_30[c("Year", "Education", "Age", "IndividualIncome")]
+balanced_panel_data_mcar_30_mice_imp <- mice(balanced_panel_data_mcar_30_temp, m = 3, maxit = 500, method = 'pmm')
 balanced_panel_data_mcar_30_mice_imp <- complete(balanced_panel_data_mcar_30_mice_imp,3)
 balanced_panel_data_mcar_30_mice_imp
 
-balanced_panel_data_mcar_10 <- balanced_panel_data_mcar_10[c("Year", "Education", "Age", "IndividualIncome")]
-balanced_panel_data_mcar_10_mice_imp <- mice(balanced_panel_data_mcar_10, m = 3, maxit = 1000, method = 'pmm')
+balanced_panel_data_mcar_10_temp <- balanced_panel_data_mcar_10[c("Year", "Education", "Age", "IndividualIncome")]
+balanced_panel_data_mcar_10_mice_imp <- mice(balanced_panel_data_mcar_10_temp, m = 3, maxit = 500, method = 'pmm')
 balanced_panel_data_mcar_10_mice_imp <- complete(balanced_panel_data_mcar_10_mice_imp,3)
 balanced_panel_data_mcar_10_mice_imp
 
-balanced_panel_data_mar_50 <- balanced_panel_data_mar_50[c("Year", "Education", "Age", "IndividualIncome")]
-balanced_panel_data_mar_50_mice_imp <- mice(balanced_panel_data_mar_50, m = 3, maxit = 1000, method = 'pmm')
+balanced_panel_data_mar_50_temp <- balanced_panel_data_mar_50[c("Year", "Education", "Age", "IndividualIncome")]
+balanced_panel_data_mar_50_mice_imp <- mice(balanced_panel_data_mar_50_temp, m = 3, maxit = 500, method = 'pmm')
 balanced_panel_data_mar_50_mice_imp <- complete(balanced_panel_data_mar_50_mice_imp,3)
 balanced_panel_data_mar_50_mice_imp
 
-balanced_panel_data_mar_30 <- balanced_panel_data_mar_30[c("Year", "Education", "Age", "IndividualIncome")]
-balanced_panel_data_mar_30_mice_imp <- mice(balanced_panel_data_mar_30, m = 3, maxit = 1000, method = 'pmm')
+balanced_panel_data_mar_30_temp <- balanced_panel_data_mar_30[c("Year", "Education", "Age", "IndividualIncome")]
+balanced_panel_data_mar_30_mice_imp <- mice(balanced_panel_data_mar_30_temp, m = 3, maxit = 500, method = 'pmm')
 balanced_panel_data_mar_30_mice_imp <- complete(balanced_panel_data_mar_30_mice_imp,3)
 balanced_panel_data_mar_30_mice_imp
 
-balanced_panel_data_mar_10 <- balanced_panel_data_mar_10[c("Year", "Education", "Age", "IndividualIncome")]
-balanced_panel_data_mar_10_mice_imp <- mice(balanced_panel_data_mar_10, m = 3, maxit = 1000, method = 'pmm')
+balanced_panel_data_mar_10_temp <- balanced_panel_data_mar_10[c("Year", "Education", "Age", "IndividualIncome")]
+balanced_panel_data_mar_10_mice_imp <- mice(balanced_panel_data_mar_10_temp, m = 3, maxit = 500, method = 'pmm')
 balanced_panel_data_mar_10_mice_imp <- complete(balanced_panel_data_mar_10_mice_imp,3)
 balanced_panel_data_mar_10_mice_imp
 
-balanced_panel_data_mnar_50 <- balanced_panel_data_mnar_50[c("Year", "Education", "Age", "IndividualIncome")]
-balanced_panel_data_mnar_50_mice_imp <- mice(balanced_panel_data_mnar_50, m = 3, maxit = 1000, method = 'pmm')
+balanced_panel_data_mnar_50_temp <- balanced_panel_data_mnar_50[c("Year", "Education", "Age", "IndividualIncome")]
+balanced_panel_data_mnar_50_mice_imp <- mice(balanced_panel_data_mnar_50_temp, m = 3, maxit = 500, method = 'pmm')
 balanced_panel_data_mnar_50_mice_imp <- complete(balanced_panel_data_mnar_50_mice_imp,3)
 balanced_panel_data_mnar_50_mice_imp
 
-balanced_panel_data_mnar_30 <- balanced_panel_data_mnar_30[c("Year", "Education", "Age", "IndividualIncome")]
-balanced_panel_data_mnar_30_mice_imp <- mice(balanced_panel_data_mnar_30, m = 3, maxit = 1000, method = 'pmm')
+balanced_panel_data_mnar_30_temp <- balanced_panel_data_mnar_30[c("Year", "Education", "Age", "IndividualIncome")]
+balanced_panel_data_mnar_30_mice_imp <- mice(balanced_panel_data_mnar_30_temp, m = 3, maxit = 500, method = 'pmm')
 balanced_panel_data_mnar_30_mice_imp <- complete(balanced_panel_data_mnar_30_mice_imp,3)
 balanced_panel_data_mnar_30_mice_imp
 
-balanced_panel_data_mnar_10 <- balanced_panel_data_mnar_10[c("Year", "Education", "Age", "IndividualIncome")]
-balanced_panel_data_mnar_10_mice_imp <- mice(balanced_panel_data_mnar_10, m = 3, maxit = 1000, method = 'pmm')
+balanced_panel_data_mnar_10_temp <- balanced_panel_data_mnar_10[c("Year", "Education", "Age", "IndividualIncome")]
+balanced_panel_data_mnar_10_mice_imp <- mice(balanced_panel_data_mnar_10_temp, m = 3, maxit = 500, method = 'pmm')
 balanced_panel_data_mnar_10_mice_imp <- complete(balanced_panel_data_mnar_10_mice_imp,3)
 balanced_panel_data_mnar_10_mice_imp
 
 # Unbalanced Panel
 
-unbalanced_panel_data_mcar_50 <- unbalanced_panel_data_mcar_50[c("Year", "Education", "Age", "IndividualIncome")]
-unbalanced_panel_data_mcar_50_mice_imp <- mice(unbalanced_panel_data_mcar_50, m = 3, maxit = 1000, method = 'pmm')
+unbalanced_panel_data_mcar_50_temp <- unbalanced_panel_data_mcar_50[c("Year", "Education", "Age", "IndividualIncome")]
+unbalanced_panel_data_mcar_50_mice_imp <- mice(unbalanced_panel_data_mcar_50_temp, m = 3, maxit = 500, method = 'pmm')
 unbalanced_panel_data_mcar_50_mice_imp <- complete(unbalanced_panel_data_mcar_50_mice_imp,3)
 unbalanced_panel_data_mcar_50_mice_imp
 
-unbalanced_panel_data_mcar_30 <- unbalanced_panel_data_mcar_30[c("Year", "Education", "Age", "IndividualIncome")]
-unbalanced_panel_data_mcar_30_mice_imp <- mice(unbalanced_panel_data_mcar_30, m = 3, maxit = 1000, method = 'pmm')
+unbalanced_panel_data_mcar_30_temp <- unbalanced_panel_data_mcar_30[c("Year", "Education", "Age", "IndividualIncome")]
+unbalanced_panel_data_mcar_30_mice_imp <- mice(unbalanced_panel_data_mcar_30_temp, m = 3, maxit = 500, method = 'pmm')
 unbalanced_panel_data_mcar_30_mice_imp <- complete(unbalanced_panel_data_mcar_30_mice_imp,3)
 unbalanced_panel_data_mcar_30_mice_imp
 
-unbalanced_panel_data_mcar_10 <- unbalanced_panel_data_mcar_10[c("Year", "Education", "Age", "IndividualIncome")]
-unbalanced_panel_data_mcar_10_mice_imp <- mice(unbalanced_panel_data_mcar_10, m = 3, maxit = 1000, method = 'pmm')
+unbalanced_panel_data_mcar_10_temp <- unbalanced_panel_data_mcar_10[c("Year", "Education", "Age", "IndividualIncome")]
+unbalanced_panel_data_mcar_10_mice_imp <- mice(unbalanced_panel_data_mcar_10_temp, m = 3, maxit = 500, method = 'pmm')
 unbalanced_panel_data_mcar_10_mice_imp <- complete(unbalanced_panel_data_mcar_10_mice_imp,3)
 unbalanced_panel_data_mcar_10_mice_imp
 
-unbalanced_panel_data_mar_50 <- unbalanced_panel_data_mar_50[c("Year", "Education", "Age", "IndividualIncome")]
-unbalanced_panel_data_mar_50_mice_imp <- mice(unbalanced_panel_data_mar_50, m = 3, maxit = 1000, method = 'pmm')
+unbalanced_panel_data_mar_50_temp <- unbalanced_panel_data_mar_50[c("Year", "Education", "Age", "IndividualIncome")]
+unbalanced_panel_data_mar_50_mice_imp <- mice(unbalanced_panel_data_mar_50_temp, m = 3, maxit = 500, method = 'pmm')
 unbalanced_panel_data_mar_50_mice_imp <- complete(unbalanced_panel_data_mar_50_mice_imp,3)
 unbalanced_panel_data_mar_50_mice_imp
 
-unbalanced_panel_data_mar_30 <- unbalanced_panel_data_mar_30[c("Year", "Education", "Age", "IndividualIncome")]
-unbalanced_panel_data_mar_30_mice_imp <- mice(unbalanced_panel_data_mar_30, m = 3, maxit = 1000, method = 'pmm')
+unbalanced_panel_data_mar_30_temp <- unbalanced_panel_data_mar_30[c("Year", "Education", "Age", "IndividualIncome")]
+unbalanced_panel_data_mar_30_mice_imp <- mice(unbalanced_panel_data_mar_30_temp, m = 3, maxit = 500, method = 'pmm')
 unbalanced_panel_data_mar_30_mice_imp <- complete(unbalanced_panel_data_mar_30_mice_imp,3)
 unbalanced_panel_data_mar_30_mice_imp
 
-unbalanced_panel_data_mar_10 <- unbalanced_panel_data_mar_10[c("Year", "Education", "Age", "IndividualIncome")]
-unbalanced_panel_data_mar_10_mice_imp <- mice(unbalanced_panel_data_mar_10, m = 3, maxit = 1000, method = 'pmm')
+unbalanced_panel_data_mar_10_temp <- unbalanced_panel_data_mar_10[c("Year", "Education", "Age", "IndividualIncome")]
+unbalanced_panel_data_mar_10_mice_imp <- mice(unbalanced_panel_data_mar_10_temp, m = 3, maxit = 500, method = 'pmm')
 unbalanced_panel_data_mar_10_mice_imp <- complete(unbalanced_panel_data_mar_10_mice_imp,3)
 unbalanced_panel_data_mar_10_mice_imp
 
-unbalanced_panel_data_mnar_50 <- unbalanced_panel_data_mnar_50[c("Year", "Education", "Age", "IndividualIncome")]
-unbalanced_panel_data_mnar_50_mice_imp <- mice(unbalanced_panel_data_mnar_50, m = 3, maxit = 1000, method = 'pmm')
+unbalanced_panel_data_mnar_50_temp <- unbalanced_panel_data_mnar_50[c("Year", "Education", "Age", "IndividualIncome")]
+unbalanced_panel_data_mnar_50_mice_imp <- mice(unbalanced_panel_data_mnar_50_temp, m = 3, maxit = 500, method = 'pmm')
 unbalanced_panel_data_mnar_50_mice_imp <- complete(unbalanced_panel_data_mnar_50_mice_imp,3)
 unbalanced_panel_data_mnar_50_mice_imp
 
-unbalanced_panel_data_mnar_30 <- unbalanced_panel_data_mnar_30[c("Year", "Education", "Age", "IndividualIncome")]
-unbalanced_panel_data_mnar_30_mice_imp <- mice(unbalanced_panel_data_mnar_30, m = 3, maxit = 1000, method = 'pmm')
+unbalanced_panel_data_mnar_30_temp <- unbalanced_panel_data_mnar_30[c("Year", "Education", "Age", "IndividualIncome")]
+unbalanced_panel_data_mnar_30_mice_imp <- mice(unbalanced_panel_data_mnar_30_temp, m = 3, maxit = 500, method = 'pmm')
 unbalanced_panel_data_mnar_30_mice_imp <- complete(unbalanced_panel_data_mnar_30_mice_imp,3)
 unbalanced_panel_data_mnar_30_mice_imp
 
-unbalanced_panel_data_mnar_10 <- unbalanced_panel_data_mnar_10[c("Year", "Education", "Age", "IndividualIncome")]
-unbalanced_panel_data_mnar_10_mice_imp <- mice(unbalanced_panel_data_mnar_10, m = 3, maxit = 1000, method = 'pmm')
+unbalanced_panel_data_mnar_10_temp <- unbalanced_panel_data_mnar_10[c("Year", "Education", "Age", "IndividualIncome")]
+unbalanced_panel_data_mnar_10_mice_imp <- mice(unbalanced_panel_data_mnar_10_temp, m = 3, maxit = 500, method = 'pmm')
 unbalanced_panel_data_mnar_10_mice_imp <- complete(unbalanced_panel_data_mnar_10_mice_imp,3)
 unbalanced_panel_data_mnar_10_mice_imp
-
-
-
-
-
-
-
-
-
-
-
 
 ######################
 ## mitml package
@@ -600,7 +868,7 @@ unbalanced_panel_data_mnar_10_mice_imp
 library(mitml)
 
 balanced_panel_data_mcar_50 = data.frame(balanced_panel_data_mcar_50)
-balanced_panel_data_mcar_50 = balanced_panel_data_mcar_50[c("id", "time", "x1", "x2")]
+balanced_panel_data_mcar_50 = balanced_panel_data_mcar_50[c("ID", "Year", "Education", "Age", "IndividualIncome")]
 type <- c(0, -2, 1, 3)
 names(type) <- colnames(balanced_panel_data_mcar_50)
 balanced_panel_data_mcar_50_pan_imp <- panImpute(balanced_panel_data_mcar_50, type = type, n.burn = 1000, n.iter = 100, m = 3)
