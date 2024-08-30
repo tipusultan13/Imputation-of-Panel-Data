@@ -150,11 +150,26 @@ View(imputed_data_3)
 
 
 
+###########mitml##########
+library(dplyr)
 
+# Ungroup the data
+unbalanced_panel_data_mcar_50 <- unbalanced_panel_data_mcar_50 %>%
+  ungroup()
 
-
-
-
+# Optionally convert to a standard data frame
+unbalanced_mitml_mcar_50 <- as.data.frame(unbalanced_panel_data_mcar_50[c("ID", "Year", "Education", "Age", "IndividualIncome")])
+names(type) <- colnames(unbalanced_mitml_mcar_50)
+unbalanced_mitml_mcar_50_imp <- panImpute(unbalanced_mitml_mcar_50, type = type, n.burn = 1000, n.iter = 100, m = 3)
+# Extract imputed datasets
+mitml_mcar_50_imp <- mitmlComplete(balanced_mitml_mcar_50_imp, print = "all")
+# Fit the model on each imputed dataset
+mitml_mcar_50_mod <- lapply(mitml_mcar_50_imp, function(x) {
+  lm(IndividualIncome ~ Year + Education + Age, data = x)
+})
+# Pool the results
+pooled_results <- testEstimates(mitml_mcar_50_mod)
+summary(pooled_results)
 
 
 

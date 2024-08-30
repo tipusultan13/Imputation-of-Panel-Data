@@ -756,7 +756,9 @@ unbalanced_panel_data_mnar_10$Education <- as.factor(unbalanced_panel_data_mnar_
 
 library(mice)
 library(broom)
-# Run the mice function for imputation
+
+# Balanced Panel
+
 balanced_panel_data_mcar_50_temp <- balanced_panel_data_mcar_50[c("Year", "Education", "Age", "IndividualIncome")]
 balanced_panel_data_mcar_50_mice_imp <- mice(balanced_panel_data_mcar_50_temp, method = 'pmm', m = 3, maxit = 500)
 model <- with(balanced_panel_data_mcar_50_mice_imp, lm(IndividualIncome ~ Year + Education + Age))
@@ -771,7 +773,6 @@ View(imputed_data_1)
 View(imputed_data_2)
 View(imputed_data_3)
 
-# Rest of the datasets
 balanced_panel_data_mcar_30_temp <- balanced_panel_data_mcar_30[c("Year", "Education", "Age", "IndividualIncome")]
 balanced_panel_data_mcar_30_mice_imp <- mice(balanced_panel_data_mcar_30_temp, m = 3, maxit = 500, method = 'pmm')
 model <- with(balanced_panel_data_mcar_30_mice_imp, lm(IndividualIncome ~ Year + Education + Age))
@@ -880,15 +881,96 @@ summary(unbalanced_panel_data_mnar_10_mice_imp_pooled_results)
 ######################
 
 library(mitml)
+library(dplyr)
 
-balanced_panel_data_mcar_50 = data.frame(balanced_panel_data_mcar_50)
-balanced_panel_data_mcar_50 = balanced_panel_data_mcar_50[c("ID", "Year", "Education", "Age", "IndividualIncome")]
-type <- c(0, -2, 1, 3)
-names(type) <- colnames(balanced_panel_data_mcar_50)
-balanced_panel_data_mcar_50_pan_imp <- panImpute(balanced_panel_data_mcar_50, type = type, n.burn = 1000, n.iter = 100, m = 3)
-balanced_panel_data_mcar_50_pan_imp = mitmlComplete(balanced_panel_data_mcar_50_pan_imp, print = 3)
-balanced_panel_data_mcar_50_pan_imp
-balanced_panel_data_mcar_50_pan_imp$imp$counts
+# Balanced Panel
+
+# Define a function to perform the imputation and model fitting
+process_panel_data <- function(panel_data) {
+  # Select relevant columns
+  selected_data <- panel_data[c("ID", "Year", "Education", "Age", "IndividualIncome")]
+  
+  # Define the type vector and assign column names
+  type <- c(0, -2, 2, 2, 1)
+  names(type) <- colnames(selected_data)
+  
+  # Impute missing data
+  imputed_data <- panImpute(selected_data, type = type, n.burn = 1000, n.iter = 100, m = 3)
+  
+  # Extract imputed datasets
+  imputed_list <- mitmlComplete(imputed_data, print = "all")
+  
+  # Fit the model on each imputed dataset
+  model_list <- lapply(imputed_list, function(x) {
+    lm(IndividualIncome ~ Year + Education + Age, data = x)
+  })
+  
+  # Pool the results
+  pooled_results <- testEstimates(model_list)
+  
+  # Return the pooled results summary
+  return(summary(pooled_results))
+}
+
+# Apply the function to each dataset in the list and store results
+process_panel_data(balanced_panel_data_mcar_50)
+process_panel_data(balanced_panel_data_mcar_30)
+process_panel_data(balanced_panel_data_mcar_10)
+process_panel_data(balanced_panel_data_mar_50)
+process_panel_data(balanced_panel_data_mar_30)
+process_panel_data(balanced_panel_data_mar_10)
+process_panel_data(balanced_panel_data_mnar_50)
+process_panel_data(balanced_panel_data_mnar_30)
+process_panel_data(balanced_panel_data_mnar_10)
+
+# Unbalanced Panel
+
+# Define a function to perform the imputation and model fitting
+process_panel_data <- function(panel_data) {
+  
+  # Ungroup the data
+  panel_data <- panel_data %>% 
+    ungroup()
+  
+  # Optionally convert to a standard data frame
+  selected_data <- as.data.frame(panel_data[c("ID", "Year", "Education", "Age", "IndividualIncome")])
+  
+  # Define the type vector and assign column names
+  type <- c(0, -2, 2, 2, 1)
+  names(type) <- colnames(selected_data)
+  
+  # Impute missing data
+  imputed_data <- panImpute(selected_data, type = type, n.burn = 1000, n.iter = 100, m = 3)
+  
+  # Extract imputed datasets
+  imputed_list <- mitmlComplete(imputed_data, print = "all")
+  
+  # Fit the model on each imputed dataset
+  model_list <- lapply(imputed_list, function(x) {
+    lm(IndividualIncome ~ Year + Education + Age, data = x)
+  })
+  
+  # Pool the results
+  pooled_results <- testEstimates(model_list)
+  
+  # Return the pooled results summary
+  return(summary(pooled_results))
+}
+
+# Apply the function to each dataset in the list and store results
+process_panel_data(unbalanced_panel_data_mcar_50)
+process_panel_data(unbalanced_panel_data_mcar_30)
+process_panel_data(unbalanced_panel_data_mcar_10)
+process_panel_data(unbalanced_panel_data_mar_50)
+process_panel_data(unbalanced_panel_data_mar_30)
+process_panel_data(unbalanced_panel_data_mar_10)
+process_panel_data(unbalanced_panel_data_mnar_50)
+process_panel_data(unbalanced_panel_data_mnar_30)
+process_panel_data(unbalanced_panel_data_mnar_10)
+
+
+
+
 
 ############################
 ## LSTM Network
