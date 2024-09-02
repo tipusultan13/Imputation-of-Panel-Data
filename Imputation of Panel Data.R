@@ -812,12 +812,14 @@ summary_unbalanced_mnar_10 <- Data_Imputation_mice(unbalanced_panel_data_mnar_10
 
 library(mitml)
 library(dplyr)
+library(plm)
+library(lmtest)
 
 # Balanced Panel
 
-# Define a function to perform the imputation and model fitting
+# Define a function to perform the imputation, model fitting, and additional steps
 Data_Imputation_mitml_Bal <- function(panel_data) {
-  # Select relevant columns
+  # Step 1: Prepare the data by selecting relevant columns
   selected_data <- panel_data[c("ID", "Year", "Education", "Age", "IndividualIncome")]
   
   # Define the type vector and assign column names
@@ -830,18 +832,46 @@ Data_Imputation_mitml_Bal <- function(panel_data) {
   # Extract imputed datasets
   imputed_list <- mitmlComplete(imputed_data, print = "all")
   
-  # Fit the model on each imputed dataset using plm
-  model_list <- lapply(imputed_list, function(x) {
+  # Step 2: Perform Breusch-Pagan test to check for a panel effect
+  breusch_pagan_results <- lapply(imputed_list, function(x) {
     pdata <- pdata.frame(x, index = c("ID", "Year"))
-    plm(IndividualIncome ~ Education + Age, data = pdata, model = "pooling")
+    bp_test <- plmtest(plm(IndividualIncome ~ Education + Age, data = pdata, model = "pooling"), type = "bp")
+    return(bp_test$p.value)
   })
   
-  # Pool the results
+  # Step 3: Based on Breusch-Pagan test, perform the appropriate regression
+  model_list <- lapply(1:length(imputed_list), function(i) {
+    pdata <- pdata.frame(imputed_list[[i]], index = c("ID", "Year"))
+    if (breusch_pagan_results[[i]] > 0.05) {
+      # No panel effect, proceed with Pooled OLS model
+      return(plm(IndividualIncome ~ Year + Education + Age, data = pdata, model = "pooling"))
+    } else {
+      # Panel effect exists, proceed to Hausman test
+      random_model <- plm(IndividualIncome ~ Year + Education + Age, data = pdata, model = "random")
+      fixed_model <- plm(IndividualIncome ~ Year + Education + Age, data = pdata, model = "within")
+      
+      # Perform Hausman test
+      hausman_test <- phtest(fixed_model, random_model)
+      
+      if (hausman_test$p.value <= 0.05) {
+        # Correlation exists, use Fixed Effects Model
+        print("Fixed Effect Model:")
+        return(fixed_model)
+      } else {
+        # No correlation, use Random Effects Model
+        print("Random Effect Model:")
+        return(random_model)
+      }
+    }
+  })
+  
+  # Step 4: Pool the results
   pooled_results <- testEstimates(model_list)
   
   # Return the pooled results summary
   return(summary(pooled_results))
 }
+
 
 # Apply the function to each dataset in the list and store results
 Data_Imputation_mitml_Bal(balanced_panel_data_mcar_50)
@@ -856,18 +886,17 @@ Data_Imputation_mitml_Bal(balanced_panel_data_mnar_10)
 
 # Unbalanced Panel
 
-# Define a function to perform the imputation and model fitting
+# Define a function to perform the imputation, model fitting, and additional steps
 Data_Imputation_mitml_Unbal <- function(panel_data) {
   
-  # Ungroup the data
+  # Step 1: Prepare the data by ungrouping and selecting relevant columns
   panel_data <- panel_data %>% 
     ungroup()
   
-  # Optionally convert to a standard data frame
   selected_data <- as.data.frame(panel_data[c("ID", "Year", "Education", "Age", "IndividualIncome")])
   
   # Define the type vector and assign column names
-  type <- c(0, -2, 2, 2, 1)
+  type <- c(0, -2, 2, 2, 1)  # 0: ID, -2: Year, 2: continuous variable, 1: dependent variable
   names(type) <- colnames(selected_data)
   
   # Impute missing data
@@ -876,13 +905,40 @@ Data_Imputation_mitml_Unbal <- function(panel_data) {
   # Extract imputed datasets
   imputed_list <- mitmlComplete(imputed_data, print = "all")
   
-  # Fit the model on each imputed dataset using plm
-  model_list <- lapply(imputed_list, function(x) {
+  # Step 2: Perform Breusch-Pagan test to check for a panel effect
+  breusch_pagan_results <- lapply(imputed_list, function(x) {
     pdata <- pdata.frame(x, index = c("ID", "Year"))
-    plm(IndividualIncome ~ Education + Age, data = pdata, model = "pooling")
+    bp_test <- plmtest(plm(IndividualIncome ~  Year + Education + Age, data = pdata, model = "pooling"), type = "bp")
+    return(bp_test$p.value)
   })
   
-  # Pool the results
+  # Step 3: Based on Breusch-Pagan test, perform the appropriate regression
+  model_list <- lapply(1:length(imputed_list), function(i) {
+    pdata <- pdata.frame(imputed_list[[i]], index = c("ID", "Year"))
+    if (breusch_pagan_results[[i]] > 0.05) {
+      # No panel effect, proceed with Pooled OLS model
+      return(plm(IndividualIncome ~  Year + Education + Age, data = pdata, model = "pooling"))
+    } else {
+      # Panel effect exists, proceed to Hausman test
+      random_model <- plm(IndividualIncome ~  Year + Education + Age, data = pdata, model = "random")
+      fixed_model <- plm(IndividualIncome ~  Year + Education + Age, data = pdata, model = "within")
+      
+      # Perform Hausman test
+      hausman_test <- phtest(fixed_model, random_model)
+      
+      if (hausman_test$p.value <= 0.05) {
+        # Correlation exists, use Fixed Effects Model
+        print("Fixed Effects")
+        return(fixed_model)
+      } else {
+        # No correlation, use Random Effects Model
+        print("Random Effects")
+        return(random_model)
+      }
+    }
+  })
+  
+  # Step 4: Pool the results
   pooled_results <- testEstimates(model_list)
   
   # Return the pooled results summary
@@ -899,41 +955,6 @@ Data_Imputation_mitml_Unbal(unbalanced_panel_data_mar_10)
 Data_Imputation_mitml_Unbal(unbalanced_panel_data_mnar_50)
 Data_Imputation_mitml_Unbal(unbalanced_panel_data_mnar_30)
 Data_Imputation_mitml_Unbal(unbalanced_panel_data_mnar_10)
-
-
-
-
-############################
-## plm Package
-############################
-
-library(plm)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ############################
 ## LSTM Network
