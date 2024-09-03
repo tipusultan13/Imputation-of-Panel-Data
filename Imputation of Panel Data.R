@@ -187,6 +187,9 @@ if (length(unbalanced_ids) > 0) {
   print(unbalanced_ids)
 }
 
+# Check for duplicate rows in the data
+print(unbalanced_panel_data[duplicated(unbalanced_panel_data), ])
+
 # Display the count of observations per year and summary statistics
 count(unbalanced_panel_data, Year)
 summary(unbalanced_panel_data)
@@ -669,77 +672,37 @@ aggr(unbalanced_panel_data_mnar_10,
 ###################
 
 ## Format Vriable to Their Originl Format
-balanced_panel_data_mcar_50$ID <- as.factor(balanced_panel_data_mcar_50$ID)
-balanced_panel_data_mcar_50$Year <- as.factor(balanced_panel_data_mcar_50$Year)
-balanced_panel_data_mcar_50$Education <- as.factor(balanced_panel_data_mcar_50$Education)
+convert_to_factors <- function(df) {
+  df$ID <- as.factor(df$ID)
+  df$Year <- as.factor(df$Year)
+  df$Education <- as.factor(df$Education)
+  return(df)
+}
 
-balanced_panel_data_mcar_30$ID <- as.factor(balanced_panel_data_mcar_30$ID)
-balanced_panel_data_mcar_30$Year <- as.factor(balanced_panel_data_mcar_30$Year)
-balanced_panel_data_mcar_30$Education <- as.factor(balanced_panel_data_mcar_30$Education)
+# Apply the function to each dataset
+balanced_panel_data_mcar_50 <- convert_to_factors(balanced_panel_data_mcar_50)
+balanced_panel_data_mcar_30 <- convert_to_factors(balanced_panel_data_mcar_30)
+balanced_panel_data_mcar_10 <- convert_to_factors(balanced_panel_data_mcar_10)
 
-balanced_panel_data_mcar_10$ID <- as.factor(balanced_panel_data_mcar_10$ID)
-balanced_panel_data_mcar_10$Year <- as.factor(balanced_panel_data_mcar_10$Year)
-balanced_panel_data_mcar_10$Education <- as.factor(balanced_panel_data_mcar_10$Education)
+balanced_panel_data_mar_50 <- convert_to_factors(balanced_panel_data_mar_50)
+balanced_panel_data_mar_30 <- convert_to_factors(balanced_panel_data_mar_30)
+balanced_panel_data_mar_10 <- convert_to_factors(balanced_panel_data_mar_10)
 
-balanced_panel_data_mar_50$ID <- as.factor(balanced_panel_data_mar_50$ID)
-balanced_panel_data_mar_50$Year <- as.factor(balanced_panel_data_mar_50$Year)
-balanced_panel_data_mar_50$Education <- as.factor(balanced_panel_data_mar_50$Education)
+balanced_panel_data_mnar_50 <- convert_to_factors(balanced_panel_data_mnar_50)
+balanced_panel_data_mnar_30 <- convert_to_factors(balanced_panel_data_mnar_30)
+balanced_panel_data_mnar_10 <- convert_to_factors(balanced_panel_data_mnar_10)
 
-balanced_panel_data_mar_30$ID <- as.factor(balanced_panel_data_mar_30$ID)
-balanced_panel_data_mar_30$Year <- as.factor(balanced_panel_data_mar_30$Year)
-balanced_panel_data_mar_30$Education <- as.factor(balanced_panel_data_mar_30$Education)
+unbalanced_panel_data_mcar_50 <- convert_to_factors(unbalanced_panel_data_mcar_50)
+unbalanced_panel_data_mcar_30 <- convert_to_factors(unbalanced_panel_data_mcar_30)
+unbalanced_panel_data_mcar_10 <- convert_to_factors(unbalanced_panel_data_mcar_10)
 
-balanced_panel_data_mar_10$ID <- as.factor(balanced_panel_data_mar_10$ID)
-balanced_panel_data_mar_10$Year <- as.factor(balanced_panel_data_mar_10$Year)
-balanced_panel_data_mar_10$Education <- as.factor(balanced_panel_data_mar_10$Education)
+unbalanced_panel_data_mar_50 <- convert_to_factors(unbalanced_panel_data_mar_50)
+unbalanced_panel_data_mar_30 <- convert_to_factors(unbalanced_panel_data_mar_30)
+unbalanced_panel_data_mar_10 <- convert_to_factors(unbalanced_panel_data_mar_10)
 
-balanced_panel_data_mnar_50$ID <- as.factor(balanced_panel_data_mnar_50$ID)
-balanced_panel_data_mnar_50$Year <- as.factor(balanced_panel_data_mnar_50$Year)
-balanced_panel_data_mnar_50$Education <- as.factor(balanced_panel_data_mnar_50$Education)
-
-balanced_panel_data_mnar_30$ID <- as.factor(balanced_panel_data_mnar_30$ID)
-balanced_panel_data_mnar_30$Year <- as.factor(balanced_panel_data_mnar_30$Year)
-balanced_panel_data_mnar_30$Education <- as.factor(balanced_panel_data_mnar_30$Education)
-
-balanced_panel_data_mnar_10$ID <- as.factor(balanced_panel_data_mnar_10$ID)
-balanced_panel_data_mnar_10$Year <- as.factor(balanced_panel_data_mnar_10$Year)
-balanced_panel_data_mnar_10$Education <- as.factor(balanced_panel_data_mnar_10$Education)
-
-unbalanced_panel_data_mcar_50$ID <- as.factor(unbalanced_panel_data_mcar_50$ID)
-unbalanced_panel_data_mcar_50$Year <- as.factor(unbalanced_panel_data_mcar_50$Year)
-unbalanced_panel_data_mcar_50$Education <- as.factor(unbalanced_panel_data_mcar_50$Education)
-
-unbalanced_panel_data_mcar_30$ID <- as.factor(unbalanced_panel_data_mcar_30$ID)
-unbalanced_panel_data_mcar_30$Year <- as.factor(unbalanced_panel_data_mcar_30$Year)
-unbalanced_panel_data_mcar_30$Education <- as.factor(unbalanced_panel_data_mcar_30$Education)
-
-unbalanced_panel_data_mcar_10$ID <- as.factor(unbalanced_panel_data_mcar_10$ID)
-unbalanced_panel_data_mcar_10$Year <- as.factor(unbalanced_panel_data_mcar_10$Year)
-unbalanced_panel_data_mcar_10$Education <- as.factor(unbalanced_panel_data_mcar_10$Education)
-
-unbalanced_panel_data_mar_50$ID <- as.factor(unbalanced_panel_data_mar_50$ID)
-unbalanced_panel_data_mar_50$Year <- as.factor(unbalanced_panel_data_mar_50$Year)
-unbalanced_panel_data_mar_50$Education <- as.factor(unbalanced_panel_data_mar_50$Education)
-
-unbalanced_panel_data_mar_30$ID <- as.factor(unbalanced_panel_data_mar_30$ID)
-unbalanced_panel_data_mar_30$Year <- as.factor(unbalanced_panel_data_mar_30$Year)
-unbalanced_panel_data_mar_30$Education <- as.factor(unbalanced_panel_data_mar_30$Education)
-
-unbalanced_panel_data_mar_10$ID <- as.factor(unbalanced_panel_data_mar_10$ID)
-unbalanced_panel_data_mar_10$Year <- as.factor(unbalanced_panel_data_mar_10$Year)
-unbalanced_panel_data_mar_10$Education <- as.factor(unbalanced_panel_data_mar_10$Education)
-
-unbalanced_panel_data_mnar_50$ID <- as.factor(unbalanced_panel_data_mnar_50$ID)
-unbalanced_panel_data_mnar_50$Year <- as.factor(unbalanced_panel_data_mnar_50$Year)
-unbalanced_panel_data_mnar_50$Education <- as.factor(unbalanced_panel_data_mnar_50$Education)
-
-unbalanced_panel_data_mnar_30$ID <- as.factor(unbalanced_panel_data_mnar_30$ID)
-unbalanced_panel_data_mnar_30$Year <- as.factor(unbalanced_panel_data_mnar_30$Year)
-unbalanced_panel_data_mnar_30$Education <- as.factor(unbalanced_panel_data_mnar_30$Education)
-
-unbalanced_panel_data_mnar_10$ID <- as.factor(unbalanced_panel_data_mnar_10$ID)
-unbalanced_panel_data_mnar_10$Year <- as.factor(unbalanced_panel_data_mnar_10$Year)
-unbalanced_panel_data_mnar_10$Education <- as.factor(unbalanced_panel_data_mnar_10$Education)
+unbalanced_panel_data_mnar_50 <- convert_to_factors(unbalanced_panel_data_mnar_50)
+unbalanced_panel_data_mnar_30 <- convert_to_factors(unbalanced_panel_data_mnar_30)
+unbalanced_panel_data_mnar_10 <- convert_to_factors(unbalanced_panel_data_mnar_10)
 
 # balanced_panel_data_mcar_50
 # balanced_panel_data_mcar_30
@@ -815,7 +778,26 @@ library(dplyr)
 library(plm)
 library(lmtest)
 
-# Balanced Panel
+## Balanced Panel
+
+# Cheching the effects
+
+# Convert the data frame to a panel data frame
+pdata_bal <- pdata.frame(balanced_panel_data, index = c("ID", "Year"))
+
+# Estimate the fixed effects model
+fe_model <- plm(IndividualIncome ~ Year + Education + Age, data = pdata_bal, model = "within")
+
+# Estimate the random effects model
+re_model <- plm(IndividualIncome ~ Year + Education + Age, data = pdata_bal, model = "random")
+
+# Perform the Hausman test to compare the fixed and random effects models
+hausman_test <- phtest(fe_model, re_model)
+
+# Print the results of the Hausman test
+print(hausman_test)
+# p-value = 0.592, which is > 0.05, null hypothesis cannot be rejected.
+# implying that the random effects in Education and Age is more appropriate.
 
 # Define a function to perform the imputation, model fitting, and additional steps
 Data_Imputation_mitml_Bal <- function(panel_data) {
@@ -823,7 +805,7 @@ Data_Imputation_mitml_Bal <- function(panel_data) {
   selected_data <- panel_data[c("ID", "Year", "Education", "Age", "IndividualIncome")]
   
   # Define the type vector and assign column names
-  type <- c(0, -2, 2, 2, 1)
+  type <- c(0, -2, 3, 3, 1)
   names(type) <- colnames(selected_data)
   
   # Impute missing data
@@ -886,6 +868,25 @@ Data_Imputation_mitml_Bal(balanced_panel_data_mnar_10)
 
 # Unbalanced Panel
 
+# Cheching the effects
+
+# Convert the data frame to a panel data frame
+pdata_unbal <- pdata.frame(unbalanced_panel_data, index = c("ID", "Year"))
+
+# Estimate the fixed effects model
+fe_model <- plm(IndividualIncome ~ Year + Education + Age, data = pdata_unbal, model = "within")
+
+# Estimate the random effects model
+re_model <- plm(IndividualIncome ~ Year + Education + Age, data = pdata_unbal, model = "random")
+
+# Perform the Hausman test to compare the fixed and random effects models
+hausman_test <- phtest(fe_model, re_model)
+
+# Print the results of the Hausman test
+print(hausman_test)
+# p-value = 9.944e-09, which is < 0.05, null hypothesis can be rejected.
+# implying that the fixed effects in Education and Age is more appropriate.
+
 # Define a function to perform the imputation, model fitting, and additional steps
 Data_Imputation_mitml_Unbal <- function(panel_data) {
   
@@ -896,7 +897,7 @@ Data_Imputation_mitml_Unbal <- function(panel_data) {
   selected_data <- as.data.frame(panel_data[c("ID", "Year", "Education", "Age", "IndividualIncome")])
   
   # Define the type vector and assign column names
-  type <- c(0, -2, 2, 2, 1)  # 0: ID, -2: Year, 2: continuous variable, 1: dependent variable
+  type <- c(0, -2, 2, 2, 1) 
   names(type) <- colnames(selected_data)
   
   # Impute missing data
