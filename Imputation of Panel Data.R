@@ -852,17 +852,17 @@ Data_Imputation_mitml_Bal <- function(panel_data) {
 
 
 # Apply the function to each dataset and store results
-mitml_bal_mcar_50 <- Data_Imputation_mitml(balanced_panel_data_mcar_50)
-mitml_bal_mcar_30 <- Data_Imputation_mitml(balanced_panel_data_mcar_30)
-mitml_bal_mcar_10 <- Data_Imputation_mitml(balanced_panel_data_mcar_10)
+mitml_bal_mcar_50 <- Data_Imputation_mitml_Bal(balanced_panel_data_mcar_50)
+mitml_bal_mcar_30 <- Data_Imputation_mitml_Bal(balanced_panel_data_mcar_30)
+mitml_bal_mcar_10 <- Data_Imputation_mitml_Bal(balanced_panel_data_mcar_10)
 
-mitml_bal_mar_50 <- Data_Imputation_mitml(balanced_panel_data_mar_50)
-mitml_bal_mar_30 <- Data_Imputation_mitml(balanced_panel_data_mar_30)
-mitml_bal_mar_10 <- Data_Imputation_mitml(balanced_panel_data_mar_10)
+mitml_bal_mar_50 <- Data_Imputation_mitml_Bal(balanced_panel_data_mar_50)
+mitml_bal_mar_30 <- Data_Imputation_mitml_Bal(balanced_panel_data_mar_30)
+mitml_bal_mar_10 <- Data_Imputation_mitml_Bal(balanced_panel_data_mar_10)
 
-mitml_bal_mnar_50 <- Data_Imputation_mitml(balanced_panel_data_mnar_50)
-mitml_bal_mnar_30 <- Data_Imputation_mitml(balanced_panel_data_mnar_30)
-mitml_bal_mnar_10 <- Data_Imputation_mitml(balanced_panel_data_mnar_10)
+mitml_bal_mnar_50 <- Data_Imputation_mitml_Bal(balanced_panel_data_mnar_50)
+mitml_bal_mnar_30 <- Data_Imputation_mitml_Bal(balanced_panel_data_mnar_30)
+mitml_bal_mnar_10 <- Data_Imputation_mitml_Bal(balanced_panel_data_mnar_10)
 
 # Function to analyze imputed data and extract coefficients
 Analyze_mitml_Bal <- function(imputed_list) {
@@ -1041,7 +1041,7 @@ Data_Imputation_Amelia <- function(data) {
   # Convert the data to panel data using plm package
   pdata <- pdata.frame(data, index = c("ID", "Year"))
   pdata = pdata[c("ID", "Year", "Education", "Age", "IndividualIncome")]
-  pdata$Year <- as.numeric(as.character(pdataX$Year))
+  pdata$Year <- as.numeric(as.character(pdata$Year))
   
   
   # Perform the imputation using Amelia
@@ -1161,17 +1161,147 @@ analyze_amelia_unbal_mnar_10 <- Analyze_Amelia(unbalanced_panel_data_mnar_10)
 ## LSTM Network
 ############################
 
+library(keras)
+library(dplyr)
+library(plm)
+
+# Define a function for LSTM-based imputation
+Data_Imputation_LSTM <- function(data) {
+  
+  # Handle missing values: Temporarily fill missing IndividualIncome values with column mean
+  temp_data <- data %>%
+    mutate(IndividualIncome = ifelse(is.na(IndividualIncome), mean(IndividualIncome, na.rm = TRUE), IndividualIncome))
+  
+  # Convert 'Education' to numeric using one-hot encoding
+  encoded_data <- temp_data %>%
+    mutate(Education = as.factor(Education)) %>%
+    select(Age, IndividualIncome, Education)
+  
+  # One-hot encode the 'Education' column
+  encoded_data <- as.data.frame(model.matrix(~ Education - 1, data = encoded_data))
+  
+  # Include other numeric columns (Age and IndividualIncome)
+  input_data <- cbind(data$Age, data$IndividualIncome, encoded_data)
+  
+  # Convert the data to a 3D array suitable for LSTM
+  train_array <- array(as.matrix(input_data), dim = c(nrow(input_data), 1, ncol(input_data)))
+  
+  # Define LSTM model
+  model <- keras_model_sequential() %>%
+    layer_lstm(units = 50, input_shape = c(1, ncol(input_data)), return_sequences = FALSE) %>%
+    layer_dense(units = 1)
+  
+  # Compile the model
+  model %>% compile(
+    loss = "mean_squared_error",
+    optimizer = optimizer_adam()  # Use the standard Adam optimizer
+  )
+  
+  # Fit the model (training)
+  model %>% fit(
+    x = train_array,
+    y = temp_data$IndividualIncome,  # Target is the IndividualIncome column
+    epochs = 50,
+    batch_size = 32
+  )
+  
+  # Predict values for the missing data
+  predicted_values <- model %>% predict(train_array)
+  
+  # Replace missing values in the original dataset with predicted values
+  data$IndividualIncome[is.na(data$IndividualIncome)] <- predicted_values[is.na(data$IndividualIncome)]
+  
+  # Return the imputed data
+  return(data)
+}
 
 
+# Apply the function to each dataset and store results
+lstm_bal_mcar_50 <- Data_Imputation_LSTM(balanced_panel_data_mcar_50)
+lstm_bal_mcar_30 <- Data_Imputation_LSTM(balanced_panel_data_mcar_30)
+lstm_bal_mcar_10 <- Data_Imputation_LSTM(balanced_panel_data_mcar_10)
+
+lstm_bal_mar_50 <- Data_Imputation_LSTM(balanced_panel_data_mar_50)
+lstm_bal_mar_30 <- Data_Imputation_LSTM(balanced_panel_data_mar_30)
+lstm_bal_mar_10 <- Data_Imputation_LSTM(balanced_panel_data_mar_10)
+
+lstm_bal_mnar_50 <- Data_Imputation_LSTM(balanced_panel_data_mnar_50)
+lstm_bal_mnar_30 <- Data_Imputation_LSTM(balanced_panel_data_mnar_30)
+lstm_bal_mnar_10 <- Data_Imputation_LSTM(balanced_panel_data_mnar_10)
+
+lstm_unbal_mcar_50 <- Data_Imputation_LSTM(unbalanced_panel_data_mcar_50)
+lstm_unbal_mcar_30 <- Data_Imputation_LSTM(unbalanced_panel_data_mcar_30)
+lstm_unbal_mcar_10 <- Data_Imputation_LSTM(unbalanced_panel_data_mcar_10)
+
+lstm_unbal_mar_50 <- Data_Imputation_LSTM(unbalanced_panel_data_mar_50)
+lstm_unbal_mar_30 <- Data_Imputation_LSTM(unbalanced_panel_data_mar_30)
+lstm_unbal_mar_10 <- Data_Imputation_LSTM(unbalanced_panel_data_mar_10)
+
+lstm_unbal_mnar_50 <- Data_Imputation_LSTM(unbalanced_panel_data_mnar_50)
+lstm_unbal_mnar_30 <- Data_Imputation_LSTM(unbalanced_panel_data_mnar_30)
+lstm_unbal_mnar_10 <- Data_Imputation_LSTM(unbalanced_panel_data_mnar_10)
 
 
+# Function to perform analysis on LSTM-imputed data
+Analyze_LSTM <- function(data) {
+  
+  # Step 1: Perform data imputation
+  imputed_data <- Data_Imputation_LSTM(data)
+  
+  # Convert to panel data
+  pdata <- pdata.frame(imputed_data, index = c("ID", "Year"))
+  
+  # Step 2: Perform Breusch-Pagan test to check for a panel effect
+  bp_test <- plmtest(plm(IndividualIncome ~ Year + Education + Age, data = pdata, model = "pooling"), type = "bp")
+  
+  # Step 3: Based on Breusch-Pagan test, perform the appropriate regression
+  if (bp_test$p.value > 0.05) {
+    # No panel effect, proceed with Pooled OLS model
+    model <- plm(IndividualIncome ~ Year + Education + Age, data = pdata, model = "pooling")
+  } else {
+    # Panel effect exists, proceed to Hausman test
+    random_model <- plm(IndividualIncome ~ Year + Education + Age, data = pdata, model = "random")
+    fixed_model <- plm(IndividualIncome ~ Year + Education + Age, data = pdata, model = "within")
+    
+    hausman_test <- phtest(fixed_model, random_model)
+    
+    if (hausman_test$p.value <= 0.05) {
+      # Correlation exists, use Fixed Effects Model
+      model <- fixed_model
+    } else {
+      # No correlation, use Random Effects Model
+      model <- random_model
+    }
+  }
+  
+  # Step 4: Return the model summary
+  return(summary(model))
+}
 
+# Apply the function to each dataset and store results
+analyze_lstm_bal_mcar_50 <- Analyze_LSTM(balanced_panel_data_mcar_50)
+analyze_lstm_bal_mcar_30 <- Analyze_LSTM(balanced_panel_data_mcar_30)
+analyze_lstm_bal_mcar_10 <- Analyze_LSTM(balanced_panel_data_mcar_10)
 
+analyze_lstm_bal_mar_50 <- Analyze_LSTM(balanced_panel_data_mar_50)
+analyze_lstm_bal_mar_30 <- Analyze_LSTM(balanced_panel_data_mar_30)
+analyze_lstm_bal_mar_10 <- Analyze_LSTM(balanced_panel_data_mar_10)
 
+analyze_lstm_bal_mnar_50 <- Analyze_LSTM(balanced_panel_data_mnar_50)
+analyze_lstm_bal_mnar_30 <- Analyze_LSTM(balanced_panel_data_mnar_30)
+analyze_lstm_bal_mnar_10 <- Analyze_LSTM(balanced_panel_data_mnar_10)
 
+analyze_lstm_unbal_mcar_50 <- Analyze_LSTM(unbalanced_panel_data_mcar_50)
+analyze_lstm_unbal_mcar_30 <- Analyze_LSTM(unbalanced_panel_data_mcar_30)
+analyze_lstm_unbal_mcar_10 <- Analyze_LSTM(unbalanced_panel_data_mcar_10)
 
+analyze_lstm_unbal_mar_50 <- Analyze_LSTM(unbalanced_panel_data_mar_50)
+analyze_lstm_unbal_mar_30 <- Analyze_LSTM(unbalanced_panel_data_mar_30)
+analyze_lstm_unbal_mar_10 <- Analyze_LSTM(unbalanced_panel_data_mar_10)
 
-
+analyze_lstm_unbal_mnar_50 <- Analyze_LSTM(unbalanced_panel_data_mnar_50)
+analyze_lstm_unbal_mnar_30 <- Analyze_LSTM(unbalanced_panel_data_mnar_30)
+analyze_lstm_unbal_mnar_10 <- Analyze_LSTM(unbalanced_panel_data_mnar_10)
 
 
 

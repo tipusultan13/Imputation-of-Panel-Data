@@ -1130,12 +1130,49 @@ analyze_amelia_unbal_mnar_10 <- Analyze_Amelia(unbalanced_panel_data_mnar_10)
 ############################
 
 
+library(keras)
 
+# Extract necessary columns: ID, Year, Age, Education, and IndividualIncome
+input_data <- balanced_panel_data_mcar_50 %>%
+  select(Age, starts_with("Education"), IndividualIncome)
 
+# Temporarily fill missing values in IndividualIncome with the column mean for training
+temp_data <- input_data
+temp_data$IndividualIncome[is.na(temp_data$IndividualIncome)] <- mean(temp_data$IndividualIncome, na.rm = TRUE)
 
+# Convert the data to a 3D array suitable for LSTM
+train_array <- array(as.matrix(temp_data), dim = c(nrow(temp_data), 1, ncol(temp_data)))
 
+# Define LSTM model
+model <- keras_model_sequential() %>%
+  layer_lstm(units = 50, input_shape = c(1, ncol(temp_data)), return_sequences = FALSE) %>%
+  layer_dense(units = 1)
 
+# Compile the model
+model %>% compile(
+  loss = "mean_squared_error",
+  optimizer = optimizer_adam()
+)
 
+# Fit the model (training)
+history <- model %>% fit(
+  x = train_array,
+  y = temp_data$IndividualIncome,  # Target is the IndividualIncome column
+  epochs = 50,
+  batch_size = 32
+)
+
+# Predict values for the missing data
+predicted_values <- model %>% predict(train_array)
+
+# Ensure predicted values are reshaped to match the missing indices
+predicted_values <- as.vector(predicted_values)  # Flatten the predicted values
+
+# Replace missing values in the original dataset with predicted values
+balanced_panel_data_mcar_50$IndividualIncome[is.na(balanced_panel_data_mcar_50$IndividualIncome)] <- predicted_values[is.na(balanced_panel_data_mcar_50$IndividualIncome)]
+
+# The dataset now has imputed values
+balanced_panel_data_mcar_50
 
 
 
