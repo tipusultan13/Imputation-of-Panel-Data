@@ -12,6 +12,8 @@ setwd("/Users/tipusultan/Documents/GitHub/Imputation-of-Panel-Data")
 library(dplyr)
 library(readxl)
 library(ggplot2)
+library(ggplot2)
+library(gridExtra)
 
 # Load and clean the data
 RawData <- readRDS("population.RDS")
@@ -43,28 +45,43 @@ AgeDist <- ggplot(data, aes(x = Age)) +
   theme_minimal()
 AgeDist
 
-# 'IndividualIncome' column: Income
+# Cleaning income column
 summary(data$IndividualIncome)
 count(data, IndividualIncome)
 data$IndividualIncome[is.na(data$IndividualIncome)] <- 0
 summary(data$IndividualIncome)
 
-# Histogram for IndividualIncome
+# Histogram for Individual Income
 IndividualIncomeHist <- ggplot(data, aes(x = IndividualIncome)) + 
   geom_histogram(binwidth = 1000) +
-  labs(title = "Histogram of Individual Income", x = "Individual Income", y = "Frequency") +
+  labs(title = "Individual Income", x = "Individual Income", y = "Frequency") +
   theme_minimal()
 IndividualIncomeHist
 
 # Apply log transformation to IndividualIncome (adding 1 to avoid log(0))
 data$LogIndividualIncome <- log(data$IndividualIncome + 1)
 
-# Plot the histogram with the log-transformed IndividualIncome
 IndividualIncomeLogHist <- ggplot(data, aes(x = LogIndividualIncome)) + 
   geom_histogram(binwidth = .10) +
-  labs(title = "Histogram of Logged IndividualIndividual", x = "Logged IndividualIncome", y = "Frequency")+
+  labs(title = "Logged Individual Income", x = "Logged Individual Income", y = "Frequency")+
   theme_minimal()
 IndividualIncomeLogHist
+
+DataTempAge <- data[data$Age >= 18 & data$Age <= 67, ]
+AFilteredIncomeLogHist <- ggplot(DataTempAge, aes(x = LogIndividualIncome)) + 
+  geom_histogram(binwidth = .10) +
+  labs(title = "Logged Individual Income (Age: 18-67)", x = "Logged Individual Income", y = "Frequency")+
+  theme_minimal()
+AFilteredIncomeLogHist
+
+DataTempIncome <- data[data$IndividualIncome != 0, ]
+IFilteredIncomeLogHist <- ggplot(DataTempIncome, aes(x = LogIndividualIncome)) + 
+  geom_histogram(binwidth = .10) +
+  labs(title = "Logged Individual Income (Without 0 Income)", x = "Logged Individual Income", y = "Frequency")+
+  theme_minimal()
+IFilteredIncomeLogHist
+
+grid.arrange(IndividualIncomeHist, IndividualIncomeLogHist, AFilteredIncomeLogHist, IFilteredIncomeLogHist, ncol = 2)
 
 sum(is.na(data)) #Total number of missing values
 data <- data[c("ID", "Year", "Education", "Age", "LogIndividualIncome")]
@@ -727,8 +744,11 @@ unbalanced_panel_data_mnar_10 <- convert_to_factors(unbalanced_panel_data_mnar_1
 
 library(mice)
 library(broom)
+packageVersion("mice")
 
-Data_Imputation_mice <- function(data, m = 3, maxit = 500, method = 'pmm') {
+StartTime_mice <- Sys.time()  # Starting time
+
+Data_Imputation_mice <- function(data, m = 3, maxit = 20, method = 'pmm') {
   # Select the necessary columns
   data_temp <- data[c("Year", "Education", "Age", "Income")]
   
@@ -794,11 +814,16 @@ analyze_mice_unbal_mcar_10 <- Analyze_mice(mice_unbal_mcar_10)
 
 analyze_mice_unbal_mar_50 <- Analyze_mice(mice_unbal_mar_50)
 analyze_mice_unbal_mar_30 <- Analyze_mice(mice_unbal_mar_30)
-analyze_mice_unbal_mar_10 <- Analyze_mice(mice_unbalanced_mar_10)
+analyze_mice_unbal_mar_10 <- Analyze_mice(mice_unbal_mar_10)
 
 analyze_mice_unbal_mnar_50 <- Analyze_mice(mice_unbal_mnar_50)
 analyze_mice_unbal_mnar_30 <- Analyze_mice(mice_unbal_mnar_30)
 analyze_mice_unbal_mnar_10 <- Analyze_mice(mice_unbal_mnar_10)
+
+EndTime_mice <- Sys.time()  # Ending time
+
+ExecutionTime_mice <- EndTime_mice - StartTime_mice
+print(ExecutionTime_mice) # Time difference of 1.198717 mins
 
 ######################
 ## mitml package
@@ -808,6 +833,7 @@ library(mitml)
 library(dplyr)
 library(plm)
 library(lmtest)
+packageVersion("mitml")
 
 ## Balanced Panel##
 ###################
@@ -828,6 +854,8 @@ hausman_test <- phtest(fe_model, re_model)
 print(hausman_test)
 # p-value is 0.2185, which is > 0.05. S0 the null hypothesis cannot be rejected.
 # This implies that the random effects in Education and Age is more appropriate.
+
+StartTime_mitml <- Sys.time()  # Starting time
 
 # Function to impute data
 Data_Imputation_mitml_Bal <- function(panel_data) {
@@ -1025,11 +1053,17 @@ analyze_mitml_unbal_mnar_50 <- Analyze_mitml_Unbal(mitml_unbal_mnar_50)
 analyze_mitml_unbal_mnar_30 <- Analyze_mitml_Unbal(mitml_unbal_mnar_30)
 analyze_mitml_unbal_mnar_10 <- Analyze_mitml_Unbal(mitml_unbal_mnar_10)
 
+EndTime_mitml <- Sys.time()  # Ending time
+
+ExecutionTime_mitml <- EndTime_mitml - StartTime_mitml
+print(ExecutionTime_mitml) # Time difference of 1.345762 mins
+
 ############################
 ## Amelia package
 ############################
 
 library(Amelia)
+packageVersion("Amelia")
 
 # Define the function for panel data conversion and imputation
 Data_Imputation_Amelia <- function(data) {
@@ -1078,6 +1112,8 @@ amelia_unbal_mnar_50 <- Data_Imputation_Amelia(unbalanced_panel_data_mnar_50)
 amelia_unbal_mnar_30 <- Data_Imputation_Amelia(unbalanced_panel_data_mnar_30)
 amelia_unbal_mnar_10 <- Data_Imputation_Amelia(unbalanced_panel_data_mnar_10)
 
+
+StartTime_amelia <- Sys.time()  # Starting time
 
 # Function to perform analysis on imputed data
 Analyze_Amelia <- function(data) {
@@ -1153,6 +1189,11 @@ analyze_amelia_unbal_mnar_50 <- Analyze_Amelia(unbalanced_panel_data_mnar_50)
 analyze_amelia_unbal_mnar_30 <- Analyze_Amelia(unbalanced_panel_data_mnar_30)
 analyze_amelia_unbal_mnar_10 <- Analyze_Amelia(unbalanced_panel_data_mnar_10)
 
+EndTime_amelia <- Sys.time()  # Ending time
+
+ExecutionTime_amelia <- EndTime_amelia - StartTime_amelia
+print(ExecutionTime_amelia) # Time difference of 1.285429 mins
+
 ############################
 ## LSTM Network
 ############################
@@ -1160,6 +1201,7 @@ analyze_amelia_unbal_mnar_10 <- Analyze_Amelia(unbalanced_panel_data_mnar_10)
 library(keras)
 library(dplyr)
 library(plm)
+packageVersion("keras")
 
 # Function to impute the data
 Data_Imputation_LSTM <- function(data) {
@@ -1236,6 +1278,8 @@ lstm_unbal_mnar_30 <- Data_Imputation_LSTM(unbalanced_panel_data_mnar_30)
 lstm_unbal_mnar_10 <- Data_Imputation_LSTM(unbalanced_panel_data_mnar_10)
 
 
+StartTime_LSTM <- Sys.time()  # Starting time
+
 # Function to analyse imputed data
 Analyze_LSTM <- function(data) {
   
@@ -1297,13 +1341,112 @@ analyze_lstm_unbal_mnar_50 <- Analyze_LSTM(unbalanced_panel_data_mnar_50)
 analyze_lstm_unbal_mnar_30 <- Analyze_LSTM(unbalanced_panel_data_mnar_30)
 analyze_lstm_unbal_mnar_10 <- Analyze_LSTM(unbalanced_panel_data_mnar_10)
 
+EndTime_LSTM <- Sys.time()  # Ending time
 
+ExecutionTime_LSTM <- EndTime_LSTM - StartTime_LSTM
+print(ExecutionTime_LSTM) # Time difference of 20.0069 mins
 
+#############################
+# Distribution Comparasion ##
+#############################
 
+##### mice #####
 
+miceData <- function(data){
+  miceImp <- complete(data, 1)
+  return(miceImp)
+}
 
+# Extract imputed dataset
+mice_imp_bal_mcar_50 <- miceData(mice_bal_mcar_50)
+mice_imp_bal_mcar_30 <- miceData(mice_bal_mcar_30)
+mice_imp_bal_mcar_10 <- miceData(mice_bal_mcar_10)
 
+mice_imp_bal_mar_50 <- miceData(mice_bal_mar_50)
+mice_imp_bal_mar_30 <- miceData(mice_bal_mar_30)
+mice_imp_bal_mar_10 <- miceData(mice_bal_mar_10)
 
+mice_imp_bal_mnar_50 <- miceData(mice_bal_mnar_50)
+mice_imp_bal_mnar_30 <- miceData(mice_bal_mnar_30)
+mice_imp_bal_mnar_10 <- miceData(mice_bal_mnar_10)
+
+mice_imp_unbal_mcar_50 <- miceData(mice_unbal_mcar_50)
+mice_imp_unbal_mcar_30 <- miceData(mice_unbal_mcar_30)
+mice_imp_unbal_mcar_10 <- miceData(mice_unbal_mcar_10)
+
+mice_imp_unbal_mar_50 <- miceData(mice_unbal_mar_50)
+mice_imp_unbal_mar_30 <- miceData(mice_unbal_mar_30)
+mice_imp_unbal_mar_10 <- miceData(mice_unbal_mar_10)
+
+mice_imp_unbal_mnar_50 <- miceData(mice_unbal_mnar_50)
+mice_imp_unbal_mnar_30 <- miceData(mice_unbal_mnar_30)
+mice_imp_unbal_mnar_10 <- miceData(mice_unbal_mnar_10)
+
+# plot distribution
+IncDist <- function(data, col){
+  DataTemp <- density(data$Income, na.rm = TRUE)
+  lines(DataTemp, col = col, lwd = 2)
+}
+
+DataTemp <- density(data$Income, na.rm = TRUE)
+plot(DataTemp, 
+     main = "Income Distributions", 
+     xlab = "Income", 
+     ylab = "Density",
+     lwd = 2, col = "black")
+
+# Add the other distributions using lines()
+IncDist(mice_imp_bal_mcar_50, "blue")
+IncDist(mice_imp_bal_mcar_30, "red")
+IncDist(mice_imp_bal_mcar_10, "pink")
+
+IncDist(mice_imp_bal_mar_50, "skyblue")
+IncDist(mice_imp_bal_mar_30, "violet")
+IncDist(mice_imp_bal_mar_10, "yellow")
+
+IncDist(mice_imp_bal_mnar_50, "orange")
+IncDist(mice_imp_bal_mnar_30, "green")
+IncDist(mice_imp_bal_mnar_10, "brown")
+
+legend("topright", 
+       legend = c("Initial Data", 
+                  "bal_mcar_50", "bal_mcar_30", "bal_mcar_10", 
+                  "bal_mar_50", "bal_mar_30", "bal_mar_10", 
+                  "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
+       col = c("black", "blue", "red", "pink", "skyblue", "violet", "yellow", 
+               "orange", "green", "brown"),
+       lwd = 2)
+
+###Unbalanced data###
+
+DataTemp <- density(data$Income, na.rm = TRUE)
+plot(DataTemp, 
+     main = "Income Distributions", 
+     xlab = "Income", 
+     ylab = "Density",
+     lwd = 2, col = "black")
+
+IncDist(mice_imp_unbal_mcar_50, "coral")
+IncDist(mice_imp_unbal_mcar_30, "salmon")
+IncDist(mice_imp_unbal_mcar_10, "lavender")
+
+IncDist(mice_imp_unbal_mar_50, "gray")
+IncDist(mice_imp_unbal_mar_30, "gold")
+IncDist(mice_imp_unbal_mar_10, "orchid")
+
+IncDist(mice_imp_unbal_mnar_50, "navy")
+IncDist(mice_imp_unbal_mnar_30, "darkgreen")
+IncDist(mice_imp_unbal_mnar_10, "steelblue")
+
+# Add a legend for clarity
+legend("topright", 
+       legend = c("Initial Data", 
+                  "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10", 
+                  "unbal_mar_50", "unbal_mar_30", "unbal_mar_10", 
+                  "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
+       col = c("black", "coral", "salmon", "lavender", 
+               "gray", "gold", "orchid", "navy", "darkgreen", "steelblue"),
+       lwd = 2)
 
 
 
