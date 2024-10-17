@@ -1383,30 +1383,31 @@ mice_imp_unbal_mnar_30 <- miceData(mice_unbal_mnar_30)
 mice_imp_unbal_mnar_10 <- miceData(mice_unbal_mnar_10)
 
 # plot distribution
-IncDist <- function(data, col){
-  DataTemp <- density(data$Income, na.rm = TRUE)
-  lines(DataTemp, col = col, lwd = 2)
+IncDist_mice <- function(data, col){
+  DataTemp_mice <- density(data$Income, na.rm = TRUE)
+  lines(DataTemp_mice, col = col, lwd = 2)
 }
 
-DataTemp <- density(data$Income, na.rm = TRUE)
-plot(DataTemp, 
-     main = "Income Distributions", 
+DataTemp_mice <- density(data$Income, na.rm = TRUE)
+plot(DataTemp_mice, 
+     main = "Income Distributions from mice - Balanced panel", 
      xlab = "Income", 
      ylab = "Density",
      lwd = 2, col = "black")
 
-# Add the other distributions using lines()
-IncDist(mice_imp_bal_mcar_50, "blue")
-IncDist(mice_imp_bal_mcar_30, "red")
-IncDist(mice_imp_bal_mcar_10, "pink")
+###Unbalanced data
 
-IncDist(mice_imp_bal_mar_50, "skyblue")
-IncDist(mice_imp_bal_mar_30, "violet")
-IncDist(mice_imp_bal_mar_10, "yellow")
+IncDist_mice(mice_imp_bal_mcar_50, "blue")
+IncDist_mice(mice_imp_bal_mcar_30, "red")
+IncDist_mice(mice_imp_bal_mcar_10, "pink")
 
-IncDist(mice_imp_bal_mnar_50, "orange")
-IncDist(mice_imp_bal_mnar_30, "green")
-IncDist(mice_imp_bal_mnar_10, "brown")
+IncDist_mice(mice_imp_bal_mar_50, "skyblue")
+IncDist_mice(mice_imp_bal_mar_30, "violet")
+IncDist_mice(mice_imp_bal_mar_10, "yellow")
+
+IncDist_mice(mice_imp_bal_mnar_50, "orange")
+IncDist_mice(mice_imp_bal_mnar_30, "green")
+IncDist_mice(mice_imp_bal_mnar_10, "brown")
 
 legend("topright", 
        legend = c("Initial Data", 
@@ -1417,28 +1418,27 @@ legend("topright",
                "orange", "green", "brown"),
        lwd = 2)
 
-###Unbalanced data###
+###Unbalanced data
 
-DataTemp <- density(data$Income, na.rm = TRUE)
-plot(DataTemp, 
-     main = "Income Distributions", 
+DataTemp_mice <- density(data$Income, na.rm = TRUE)
+plot(DataTemp_mice, 
+     main = "Income Distributions from mice - Unbalanced panel", 
      xlab = "Income", 
      ylab = "Density",
      lwd = 2, col = "black")
 
-IncDist(mice_imp_unbal_mcar_50, "coral")
-IncDist(mice_imp_unbal_mcar_30, "salmon")
-IncDist(mice_imp_unbal_mcar_10, "lavender")
+IncDist_mice(mice_imp_unbal_mcar_50, "coral")
+IncDist_mice(mice_imp_unbal_mcar_30, "salmon")
+IncDist_mice(mice_imp_unbal_mcar_10, "lavender")
 
-IncDist(mice_imp_unbal_mar_50, "gray")
-IncDist(mice_imp_unbal_mar_30, "gold")
-IncDist(mice_imp_unbal_mar_10, "orchid")
+IncDist_mice(mice_imp_unbal_mar_50, "gray")
+IncDist_mice(mice_imp_unbal_mar_30, "gold")
+IncDist_mice(mice_imp_unbal_mar_10, "orchid")
 
-IncDist(mice_imp_unbal_mnar_50, "navy")
-IncDist(mice_imp_unbal_mnar_30, "darkgreen")
-IncDist(mice_imp_unbal_mnar_10, "steelblue")
+IncDist_mice(mice_imp_unbal_mnar_50, "navy")
+IncDist_mice(mice_imp_unbal_mnar_30, "darkgreen")
+IncDist_mice(mice_imp_unbal_mnar_10, "steelblue")
 
-# Add a legend for clarity
 legend("topright", 
        legend = c("Initial Data", 
                   "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10", 
@@ -1448,7 +1448,198 @@ legend("topright",
                "gray", "gold", "orchid", "navy", "darkgreen", "steelblue"),
        lwd = 2)
 
+##### mitml #####
+
+# Data Extraction
+mitmlData <- function(data){
+  mitmlImp <- data[[1]]
+  return(mitmlImp)
+}
+
+mitml_imp_bal_mcar_50 <- mitmlData(mitml_bal_mcar_50)
+mitml_imp_bal_mcar_30 <- mitmlData(mitml_bal_mcar_30)
+mitml_imp_bal_mcar_10 <- mitmlData(mitml_bal_mcar_10)
 
 
+mitml_imp_bal_mar_50 <- mitmlData(mitml_bal_mar_50)
+mitml_imp_bal_mar_30 <- mitmlData(mitml_bal_mar_30)
+mitml_imp_bal_mar_10 <- mitmlData(mitml_bal_mar_10)
 
 
+mitml_imp_bal_mnar_50 <- mitmlData(mitml_bal_mnar_50)
+mitml_imp_bal_mnar_30 <- mitmlData(mitml_bal_mnar_30)
+mitml_imp_bal_mnar_10 <- mitmlData(mitml_bal_mnar_10)
+
+mitml_imp_unbal_mcar_50 <- mitmlData(mitml_unbal_mcar_50)
+mitml_imp_unbal_mcar_30 <- mitmlData(mitml_unbal_mcar_30)
+mitml_imp_unbal_mcar_10 <- mitmlData(mitml_unbal_mcar_10)
+
+mitml_imp_unbal_mar_50 <- mitmlData(mitml_unbal_mar_50)
+mitml_imp_unbal_mar_30 <- mitmlData(mitml_unbal_mar_30)
+mitml_imp_unbal_mar_10 <- mitmlData(mitml_unbal_mar_10)
+
+mitml_imp_unbal_mnar_50 <- mitmlData(mitml_unbal_mnar_50)
+mitml_imp_unbal_mnar_30 <- mitmlData(mitml_unbal_mnar_30)
+mitml_imp_unbal_mnar_10 <- mitmlData(mitml_unbal_mnar_10)
+
+### Plot Distribution
+IncDist_mitml <- function(data, col) {
+  DataTemp_mitml <- density(data$Income, na.rm = TRUE)
+  lines(DataTemp_mitml, col = col, lwd = 2)
+}
+
+DataTemp_mitml <- density(data$Income, na.rm = TRUE)
+plot(DataTemp_mitml, 
+     main = "Income Distributions from mitml - Balanced panel", 
+     xlab = "Income", 
+     ylab = "Density",
+     lwd = 2, col = "black")
+
+# Balanced Data
+IncDist_mitml(mitml_imp_bal_mcar_50, "blue")
+IncDist_mitml(mitml_imp_bal_mcar_30, "red")
+IncDist_mitml(mitml_imp_bal_mcar_10, "pink")
+
+IncDist_mitml(mitml_imp_bal_mar_50, "skyblue")
+IncDist_mitml(mitml_imp_bal_mar_30, "violet")
+IncDist_mitml(mitml_imp_bal_mar_10, "yellow")
+
+IncDist_mitml(mitml_imp_bal_mnar_50, "orange")
+IncDist_mitml(mitml_imp_bal_mnar_30, "green")
+IncDist_mitml(mitml_imp_bal_mnar_10, "brown")
+
+legend("topright", 
+       legend = c("Initial Data", 
+                  "bal_mcar_50", "bal_mcar_30", "bal_mcar_10", 
+                  "bal_mar_50", "bal_mar_30", "bal_mar_10", 
+                  "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
+       col = c("black", "blue", "red", "pink", "skyblue", "violet", "yellow", 
+               "orange", "green", "brown"),
+       lwd = 2)
+
+### Unbalanced data
+
+DataTemp_mitml <- density(data$Income, na.rm = TRUE)
+plot(DataTemp_mitml, 
+     main = "Income Distributions from mitml - Unbalanced Panel", 
+     xlab = "Income", 
+     ylab = "Density",
+     lwd = 2, col = "black")
+
+IncDist_mitml(mitml_imp_unbal_mcar_50, "coral")
+IncDist_mitml(mitml_imp_unbal_mcar_30, "salmon")
+IncDist_mitml(mitml_imp_unbal_mcar_10, "lavender")
+
+IncDist_mitml(mitml_imp_unbal_mar_50, "gray")
+IncDist_mitml(mitml_imp_unbal_mar_30, "gold")
+IncDist_mitml(mitml_imp_unbal_mar_10, "orchid")
+
+IncDist_mitml(mitml_imp_unbal_mnar_50, "navy")
+IncDist_mitml(mitml_imp_unbal_mnar_30, "darkgreen")
+IncDist_mitml(mitml_imp_unbal_mnar_10, "steelblue")
+
+legend("topright", 
+       legend = c("Initial Data", 
+                  "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10", 
+                  "unbal_mar_50", "unbal_mar_30", "unbal_mar_10", 
+                  "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
+       col = c("black", "coral", "salmon", "lavender", 
+               "gray", "gold", "orchid", "navy", "darkgreen", "steelblue"),
+       lwd = 2)
+
+### amelia
+
+# Data Extraction
+ameliaData <- function(data){
+  ameliaImp <- data$imputations[[1]]
+  return(ameliaImp)
+}
+
+amelia_imp_bal_mcar_50 <- ameliaData(amelia_bal_mcar_50)
+amelia_imp_bal_mcar_30 <- ameliaData(amelia_bal_mcar_30)
+amelia_imp_bal_mcar_10 <- ameliaData(amelia_bal_mcar_10)
+
+amelia_imp_bal_mar_50 <- ameliaData(amelia_bal_mar_50)
+amelia_imp_bal_mar_30 <- ameliaData(amelia_bal_mar_30)
+amelia_imp_bal_mar_10 <- ameliaData(amelia_bal_mar_10)
+
+amelia_imp_bal_mnar_50 <- ameliaData(amelia_bal_mnar_50)
+amelia_imp_bal_mnar_30 <- ameliaData(amelia_bal_mnar_30)
+amelia_imp_bal_mnar_10 <- ameliaData(amelia_bal_mnar_10)
+
+amelia_imp_unbal_mcar_50 <- ameliaData(amelia_unbal_mcar_50)
+amelia_imp_unbal_mcar_30 <- ameliaData(amelia_unbal_mcar_30)
+amelia_imp_unbal_mcar_10 <- ameliaData(amelia_unbal_mcar_10)
+
+amelia_imp_unbal_mar_50 <- ameliaData(amelia_unbal_mar_50)
+amelia_imp_unbal_mar_30 <- ameliaData(amelia_unbal_mar_30)
+amelia_imp_unbal_mar_10 <- ameliaData(amelia_unbal_mar_10)
+
+amelia_imp_unbal_mnar_50 <- ameliaData(amelia_unbal_mnar_50)
+amelia_imp_unbal_mnar_30 <- ameliaData(amelia_unbal_mnar_30)
+amelia_imp_unbal_mnar_10 <- ameliaData(amelia_unbal_mnar_10)
+
+# Plot Distribution
+IncDist_amelia <- function(data, col) {
+  DataTemp_amelia <- density(data$Income, na.rm = TRUE)
+  lines(DataTemp_amelia, col = col, lwd = 2)
+}
+
+# Balanced Panel
+DataTemp_amelia <- density(data$Income, na.rm = TRUE)
+plot(DataTemp_amelia, 
+     main = "Income Distributions from Amelia - Balanced Panel", 
+     xlab = "Income", 
+     ylab = "Density",
+     lwd = 2, col = "black")
+
+IncDist_amelia(amelia_imp_bal_mcar_50, "blue")
+IncDist_amelia(amelia_imp_bal_mcar_30, "red")
+IncDist_amelia(amelia_imp_bal_mcar_10, "pink")
+
+IncDist_amelia(amelia_imp_bal_mar_50, "skyblue")
+IncDist_amelia(amelia_imp_bal_mar_30, "violet")
+IncDist_amelia(amelia_imp_bal_mar_10, "yellow")
+
+IncDist_amelia(amelia_imp_bal_mnar_50, "orange")
+IncDist_amelia(amelia_imp_bal_mnar_30, "green")
+IncDist_amelia(amelia_imp_bal_mnar_10, "brown")
+
+legend("topright", 
+       legend = c("Initial Data", 
+                  "bal_mcar_50", "bal_mcar_30", "bal_mcar_10", 
+                  "bal_mar_50", "bal_mar_30", "bal_mar_10", 
+                  "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
+       col = c("black", "blue", "red", "pink", "skyblue", "violet", "yellow", 
+               "orange", "green", "brown"),
+       lwd = 2)
+
+# Unbalanced Panel
+DataTemp_amelia <- density(data$Income, na.rm = TRUE)
+plot(DataTemp_amelia, 
+     main = "Income Distributions from Amelia - Unbalanced Panel", 
+     xlab = "Income", 
+     ylab = "Density",
+     lwd = 2, col = "black")
+
+IncDist_amelia(amelia_imp_unbal_mcar_50, "coral")
+IncDist_amelia(amelia_imp_unbal_mcar_30, "salmon")
+IncDist_amelia(amelia_imp_unbal_mcar_10, "lavender")
+
+IncDist_amelia(amelia_imp_unbal_mar_50, "gray")
+IncDist_amelia(amelia_imp_unbal_mar_30, "gold")
+IncDist_amelia(amelia_imp_unbal_mar_10, "orchid")
+
+IncDist_amelia(amelia_imp_unbal_mnar_50, "navy")
+IncDist_amelia(amelia_imp_unbal_mnar_30, "darkgreen")
+IncDist_amelia(amelia_imp_unbal_mnar_10, "steelblue")
+
+
+legend("topright", 
+       legend = c("Initial Data", 
+                  "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10", 
+                  "unbal_mar_50", "unbal_mar_30", "unbal_mar_10", 
+                  "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
+       col = c("black", "coral", "salmon", "lavender", 
+               "gray", "gold", "orchid", "navy", "darkgreen", "steelblue"),
+       lwd = 2)
