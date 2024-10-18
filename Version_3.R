@@ -1,54 +1,62 @@
-Data_Imputation_mitml_Bal <- function(panel_data) {
-  # Load required libraries
-  library(mitml)
-  library(plm)
+library(keras)
+library(dplyr)
+
+# Function to impute the data using LSTM
+Data_Imputation_LSTM <- function(data) {
   
-  # Step 1: Prepare the data by selecting relevant columns
-  selected_data <- panel_data[c("ID", "Year", "Education", "Age", "IndividualIncome")]
+  # Temporarily filling the missing values in the Income column with mean
+  temp_data <- data %>%
+    mutate(Income = ifelse(is.na(Income), mean(Income, na.rm = TRUE), Income))
   
-  # Define the type vector and assign column names
-  type <- c(0, -2, 3, 3, 1)
-  names(type) <- colnames(selected_data)
+  # Convert 'Education' to numeric using one-hot encoding
+  encoded_data <- temp_data %>%
+    mutate(Education = as.factor(Education)) %>%
+    select(Age, Income, Education)
   
-  # Step 2: Impute missing data
-  imputed_data <- panImpute(selected_data, type = type, n.burn = 1000, n.iter = 100, m = 3)
+  encoded_data <- as.data.frame(model.matrix(~ Education - 1, data = encoded_data))
   
-  # Step 3: Extract imputed datasets
-  imputed_list <- mitmlComplete(imputed_data, print = "all")
+  # Include other numeric columns (Age and Income)
+  input_data <- cbind(Age = temp_data$Age, Income = temp_data$Income, encoded_data)
   
-  # Initialize a list to store the models
-  model_list <- list()
+  # Ensure no NA values in the Income column during training
+  complete_cases <- input_data[!is.na(input_data$Income), ]
   
-  # Step 4: Fit the model to each imputed dataset
-  for (i in 1:length(imputed_list)) {
-    imputed_dataset <- imputed_list[[i]]
+  # Convert the data to a 3D array, suitable for LSTM
+  train_array <- array(as.matrix(complete_cases), dim = c(nrow(complete_cases), 1, ncol(complete_cases)))
+  
+  # Define LSTM model
+  model <- keras_model_sequential() %>%
+    layer_lstm(units = 50, input_shape = c(1, ncol(complete_cases)), return_sequences = FALSE) %>%
+    layer_dense(units = 1)
+  
+  # Compile the model
+  model %>% compile(
+    loss = "mean_squared_error",
+    optimizer = optimizer_adam()
+  )
+  
+  # Fit the model (training)
+  model %>% fit(
+    x = train_array,
+    y = complete_cases$Income,  # Target is the Income column
+    epochs = 50,
+    batch_size = 32
+  )
+  
+  # Handle missing cases
+  missing_cases <- input_data[is.na(data$Income), ]
+  if (nrow(missing_cases) > 0) {
+    # Predict missing values
+    missing_array <- array(as.matrix(missing_cases), dim = c(nrow(missing_cases), 1, ncol(missing_cases)))
+    predicted_values <- model %>% predict(missing_array)
     
-    # Ensure the data is in the appropriate panel data format
-    pdata <- pdata.frame(imputed_dataset, index = c("ID", "Year"))
-    
-    # Fit a fixed-effects model using the "within" method
-    model <- plm(IndividualIncome ~ Education + Age, data = pdata, model = "within")
-    
-    # Store the model
-    model_list[[i]] <- model
-    
-    # Print the summary of the model to see the coefficients
-    print(summary(model))
+    # Replace missing values in the original data
+    data$Income[is.na(data$Income)] <- predicted_values
   }
   
-  return(model_list)
+  return(data)
 }
 
-
-# Apply the function to the panel data
-Data_Imputation_mitml_Bal(balanced_panel_data_mcar_50)
-
-Data_Imputation_mitml_Bal(balanced_panel_data_mcar_30)
-Data_Imputation_mitml_Bal(balanced_panel_data_mcar_10)
-Data_Imputation_mitml_Bal(balanced_panel_data_mar_50)
-Data_Imputation_mitml_Bal(balanced_panel_data_mar_30)
-Data_Imputation_mitml_Bal(balanced_panel_data_mar_10)
-Data_Imputation_mitml_Bal(balanced_panel_data_mnar_50)
-Data_Imputation_mitml_Bal(balanced_panel_data_mnar_30)
-Data_Imputation_mitml_Bal(balanced_panel_data_mnar_10)
+# Apply the function to the dataset
+lstm_bal_mcar_50 <- Data_Imputation_LSTM(balanced_panel_data_mcar_50)
 
