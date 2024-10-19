@@ -1038,7 +1038,7 @@ amelia_unbal_mnar_10 <- Data_Imputation_Amelia(unbalanced_panel_data_mnar_10)
 
 StartTime_amelia <- Sys.time()  # Starting time
 
-# Function to perform analysis on imputed data
+# Function to generate coefficients and intercepts
 Analyze_Amelia <- function(data) {
   
   # Step 1: Imputation and extraction of data
@@ -1120,57 +1120,50 @@ library(plm)
 packageVersion("keras")
 
 
-# Function to impute the data using LSTM
+# Function to impute the datasets
 Data_Imputation_LSTM <- function(data) {
   
-  # Temporarily filling the missing values in the Income column with mean
-  temp_data <- data %>%
-    mutate(Income = ifelse(is.na(Income), mean(Income, na.rm = TRUE), Income))
+  # Temporarily remove the rows with the missing values
+  DataTemp <- data %>%
+    filter(!is.na(Income))
   
-  # Convert 'Education' to numeric using one-hot encoding
-  encoded_data <- temp_data %>%
+  # Convert 'Education' to numeric to make it more compatible with the model and including other numeric columns
+  DataEncoded <- DataTemp %>%
     mutate(Education = as.factor(Education)) %>%
     select(Age, Income, Education)
   
-  encoded_data <- as.data.frame(model.matrix(~ Education - 1, data = encoded_data))
+  DataEncoded <- as.data.frame(model.matrix(~ Education - 1, data = DataEncoded))
   
-  # Include other numeric columns (Age and Income)
-  input_data <- cbind(Age = temp_data$Age, Income = temp_data$Income, encoded_data)
+  InputData <- cbind(Age = DataTemp$Age, Income = DataTemp$Income, DataEncoded)
   
-  # Ensure no NA values in the Income column during training
-  complete_cases <- input_data[!is.na(input_data$Income), ]
+  CompleteCase <- InputData[!is.na(InputData$Income), ]
   
-  # Convert the data to a 3D array, suitable for LSTM
-  train_array <- array(as.matrix(complete_cases), dim = c(nrow(complete_cases), 1, ncol(complete_cases)))
+  TrainArray <- array(as.matrix(CompleteCase), dim = c(nrow(CompleteCase), 1, ncol(CompleteCase)))   # Because 3D array is more suitable for LSTM
   
-  # Define LSTM model
+  # define and compile the LSTM model
   model <- keras_model_sequential() %>%
-    layer_lstm(units = 50, input_shape = c(1, ncol(complete_cases)), return_sequences = FALSE) %>%
+    layer_lstm(units = 50, input_shape = c(1, ncol(CompleteCase)), return_sequences = FALSE) %>%
     layer_dense(units = 1)
-  
-  # Compile the model
+
   model %>% compile(
     loss = "mean_squared_error",
     optimizer = optimizer_adam()
   )
   
-  # Fit the model (training)
+  # Train the model
   model %>% fit(
-    x = train_array,
-    y = complete_cases$Income,  # Target is the Income column
+    x = TrainArray,
+    y = CompleteCase$Income,  # Target is the Income column
     epochs = 50,
     batch_size = 32
   )
   
-  # Handle missing cases
-  missing_cases <- input_data[is.na(data$Income), ]
-  if (nrow(missing_cases) > 0) {
-    # Predict missing values
-    missing_array <- array(as.matrix(missing_cases), dim = c(nrow(missing_cases), 1, ncol(missing_cases)))
-    predicted_values <- model %>% predict(missing_array)
-    
-    # Replace missing values in the original data
-    data$Income[is.na(data$Income)] <- predicted_values
+  # Predict and replacing the missing values
+  MissingCase <- InputData[is.na(data$Income), ]
+  if (nrow(MissingCase) > 0) {
+    MissingArray <- array(as.matrix(MissingCase), dim = c(nrow(MissingCase), 1, ncol(MissingCase)))
+    PredictedValue <- model %>% predict(MissingArray)
+        data$Income[is.na(data$Income)] <- PredictedValue
   }
   
   return(data)
@@ -1204,19 +1197,17 @@ lstm_unbal_mnar_10 <- Data_Imputation_LSTM(unbalanced_panel_data_mnar_10)
 
 StartTime_LSTM <- Sys.time()  # Starting time
 
-# Function to analyse imputed data
+# Function to generate coefficients and intercepts
 Analyze_LSTM <- function(data) {
   
-  # Step 1: Perform data imputation
+  # Step 1: Imputa the missing values and convert the data into panel data
   imputed_data <- Data_Imputation_LSTM(data)
-  
-  # Convert to panel data
   pdata <- pdata.frame(imputed_data, index = c("ID", "Year"))
   
-  # Step 2: Perform Breusch-Pagan test to check if panel effect exist
+  # Step 2: Perform Breusch-Pagan test to check the panel effects
   bp_test <- plmtest(plm(Income ~ Year + Education + Age, data = pdata, model = "pooling"), type = "bp")
   
-  # Step 3: Based on Breusch-Pagan test, perform the appropriate regression
+  # Step 3: Based on the Breusch-Pagan test use appropriate models
   if (bp_test$p.value > 0.05) {
     # Pooled OLS for no panel effect
     model <- plm(Income ~ Year + Education + Age, data = pdata, model = "pooling")
@@ -1228,11 +1219,9 @@ Analyze_LSTM <- function(data) {
     hausman_test <- phtest(fixed_model, random_model)
     
     if (hausman_test$p.value <= 0.05) {
-      # Use Fixed effect model if correlation exists
-      model <- fixed_model
+      model <- fixed_model # Fixed effect model if correlation exists
     } else {
-      # Use Random Effect model if correlation does not exists
-      model <- random_model
+      model <- random_model # Random Effect model if correlation does not exist
     }
   }
   
@@ -1577,24 +1566,24 @@ IncDist_LSTM <- function(data, col) {
 }
 
 # Balanced Panel
-DataTemp_LSTM <- density(data$Income, na.rm = TRUE)
+DataTemp_LSTM <- density(balanced_panel_data$Income, na.rm = TRUE)
 plot(DataTemp_LSTM, 
      main = "Income Distributions from LSTM - Balanced Panel", 
      xlab = "Income", 
      ylab = "Density",
      lwd = 2, col = "black")
 
-IncDist_LSTM(amelia_imp_bal_mcar_50, "blue")
-IncDist_LSTM(amelia_imp_bal_mcar_30, "red")
-IncDist_LSTM(amelia_imp_bal_mcar_10, "pink")
+IncDist_LSTM(lstm_bal_mcar_50, "blue")
+IncDist_LSTM(lstm_bal_mcar_30, "red")
+IncDist_LSTM(lstm_bal_mcar_10, "pink")
 
-IncDist_LSTM(amelia_imp_bal_mar_50, "skyblue")
-IncDist_LSTM(amelia_imp_bal_mar_30, "violet")
-IncDist_LSTM(amelia_imp_bal_mar_10, "yellow")
+IncDist_LSTM(lstm_bal_mar_50, "skyblue")
+IncDist_LSTM(lstm_bal_mar_30, "violet")
+IncDist_LSTM(lstm_bal_mar_10, "yellow")
 
-IncDist_LSTM(amelia_imp_bal_mnar_50, "orange")
-IncDist_LSTM(amelia_imp_bal_mnar_30, "green")
-IncDist_LSTM(amelia_imp_bal_mnar_10, "brown")
+IncDist_LSTM(lstm_bal_mnar_50, "orange")
+IncDist_LSTM(lstm_bal_mnar_30, "green")
+IncDist_LSTM(lstm_bal_mnar_10, "brown")
 
 legend("topright", 
        legend = c("Initial Data", 
@@ -1606,24 +1595,24 @@ legend("topright",
        lwd = 2)
 
 # Unbalanced Panel
-DataTemp_LSTM <- density(data$Income, na.rm = TRUE)
+DataTemp_LSTM <- density(unbalanced_panel_data$Income, na.rm = TRUE)
 plot(DataTemp_LSTM, 
      main = "Income Distributions from LSTM - Unbalanced Panel", 
      xlab = "Income", 
      ylab = "Density",
      lwd = 2, col = "black")
 
-IncDist_LSTM(amelia_imp_unbal_mcar_50, "coral")
-IncDist_LSTM(amelia_imp_unbal_mcar_30, "salmon")
-IncDist_LSTM(amelia_imp_unbal_mcar_10, "lavender")
+IncDist_LSTM(lstm_unbal_mcar_50, "coral")
+IncDist_LSTM(lstm_unbal_mcar_30, "salmon")
+IncDist_LSTM(lstm_unbal_mcar_10, "lavender")
 
-IncDist_LSTM(amelia_imp_unbal_mar_50, "gray")
-IncDist_LSTM(amelia_imp_unbal_mar_30, "gold")
-IncDist_LSTM(amelia_imp_unbal_mar_10, "orchid")
+IncDist_LSTM(lstm_unbal_mar_50, "gray")
+IncDist_LSTM(lstm_unbal_mar_30, "gold")
+IncDist_LSTM(lstm_unbal_mar_10, "orchid")
 
-IncDist_LSTM(amelia_imp_unbal_mnar_50, "navy")
-IncDist_LSTM(amelia_imp_unbal_mnar_30, "darkgreen")
-IncDist_LSTM(amelia_imp_unbal_mnar_10, "steelblue")
+IncDist_LSTM(lstm_unbal_mnar_50, "navy")
+IncDist_LSTM(lstm_unbal_mnar_30, "darkgreen")
+IncDist_LSTM(lstm_unbal_mnar_10, "steelblue")
 
 
 legend("topright", 

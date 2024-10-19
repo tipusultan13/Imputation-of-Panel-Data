@@ -12,6 +12,8 @@ setwd("/Users/tipusultan/Documents/GitHub/Imputation-of-Panel-Data")
 library(dplyr)
 library(readxl)
 library(ggplot2)
+library(ggplot2)
+library(gridExtra)
 
 # Load and clean the data
 RawData <- readRDS("population.RDS")
@@ -20,15 +22,14 @@ data = RawData[c("id", "year","EF310", "EF44", "inc.ind")]
 colnames(data) <- c("ID", "Year", "Education", "Age", "IndividualIncome")
 summary(data)
 
-# 'ID' column
+# 'ID'
 count(data, ID)
 
-# 'Year' column
+# 'Year'
 count(data, Year)
-# Filter the data to keep only rows where the 'Year' is between 2013 and 2023 inclusive
-data <- subset(data, Year >= 2013 & Year <= 2023)
+data <- subset(data, Year >= 2013 & Year <= 2023) # Keeping the data from 2013 to 2023
 
-# 'Education' column - Highest general school degree
+# 'Education': Highest general school degree
 count(data, Education)
 data$Education[is.na(data$Education)] <- 7
 
@@ -36,49 +37,63 @@ data$Education[is.na(data$Education)] <- 7
 count(data, Age)
 summary(data$Age)
 
-# Plot the density curve for Age
-ggplot(data, aes(x = Age)) +
-  geom_density(fill = "blue", alpha = 0.5) +
-  labs(title = "Density Curve of Age",
-       x = "Age",
-       y = "Density") +
+# Density curve for Age
+AgeDist <- ggplot(data, aes(x = Age)) + 
+  geom_density() +
+  labs(title = "Density Curve of Age", x = "Age", y = "Density") +
   theme_minimal()
+AgeDist
 
-# 'IndividualIncome' column - Income
+# Cleaning income column
 summary(data$IndividualIncome)
 count(data, IndividualIncome)
 data$IndividualIncome[is.na(data$IndividualIncome)] <- 0
 summary(data$IndividualIncome)
 
-# Plot the histogram for IndividualIncome
-ggplot(data, aes(x = IndividualIncome)) +
-  geom_histogram(binwidth = 5000, fill = "blue", color = "black", alpha = 0.7) +
-  labs(title = "Histogram of Individual Income",
-       x = "Individual Income",
-       y = "Frequency") +
+# Histogram for Individual Income
+IndividualIncomeHist <- ggplot(data, aes(x = IndividualIncome)) + 
+  geom_histogram(binwidth = 1000) +
+  labs(title = "Individual Income", x = "Individual Income", y = "Frequency") +
   theme_minimal()
+IndividualIncomeHist
 
 # Apply log transformation to IndividualIncome (adding 1 to avoid log(0))
 data$LogIndividualIncome <- log(data$IndividualIncome + 1)
 
-# Plot the histogram with the log-transformed IndividualIncome
-ggplot(data, aes(x = LogIndividualIncome)) +
-  geom_histogram(binwidth = 0.2, fill = "blue", color = "black", alpha = 0.7) +
-  labs(title = "Histogram of Log-Transformed Individual Income",
-       x = "Log of Individual Income",
-       y = "Frequency") +
+IndividualIncomeLogHist <- ggplot(data, aes(x = LogIndividualIncome)) + 
+  geom_histogram(binwidth = .10) +
+  labs(title = "Logged Individual Income", x = "Logged Individual Income", y = "Frequency")+
   theme_minimal()
+IndividualIncomeLogHist
 
-sum(is.na(data)) #Total number of NA values in the data frame
-data <- data[c("ID", "Year", "Education", "Age", "IndividualIncome")]
+DataTempAge <- data[data$Age >= 18 & data$Age <= 67, ]
+AFilteredIncomeLogHist <- ggplot(DataTempAge, aes(x = LogIndividualIncome)) + 
+  geom_histogram(binwidth = .10) +
+  labs(title = "Logged Individual Income (Age: 18-67)", x = "Logged Individual Income", y = "Frequency")+
+  theme_minimal()
+AFilteredIncomeLogHist
+
+DataTempIncome <- data[data$IndividualIncome != 0, ]
+IFilteredIncomeLogHist <- ggplot(DataTempIncome, aes(x = LogIndividualIncome)) + 
+  geom_histogram(binwidth = .10) +
+  labs(title = "Logged Individual Income (Without 0 Income)", x = "Logged Individual Income", y = "Frequency")+
+  theme_minimal()
+IFilteredIncomeLogHist
+
+grid.arrange(IndividualIncomeHist, IndividualIncomeLogHist, AFilteredIncomeLogHist, IFilteredIncomeLogHist, ncol = 2)
+
+sum(is.na(data)) #Total number of missing values
+data <- data[c("ID", "Year", "Education", "Age", "LogIndividualIncome")]
+colnames(data)[colnames(data) == "LogIndividualIncome"] <- "Income"
+#data <- data[c("ID", "Year", "Education", "Age", "IndividualIncome")]
+#colnames(data)[colnames(data) == "IndividualIncome"] <- "Income"
 summary(data)
 
 ########################
 ## Balanced Panel
 ########################
 
-# Ensure the 'Year' column is numeric or integer to make the calculation easy
-data$Year <- as.numeric(data$Year)
+data$Year <- as.numeric(data$Year) # Convert Year column to make the calculation easy
 
 # Find IDs that are present in all years between 2013 and 2023
 years <- 2013:2023
@@ -86,10 +101,9 @@ common_ids <- Reduce(intersect, lapply(years, function(year) {
   unique(data$ID[data$Year == year])
 }))
 
-# Filter the data to keep only rows with common IDs
-panel_data <- data[data$ID %in% common_ids, ]
+panel_data <- data[data$ID %in% common_ids, ] # Filter the data to keep only rows with common IDs
 
-# Count occurrences of each ID
+# Count the occurrence of each ID
 id_counts <- panel_data %>%
   count(ID)
 
@@ -106,23 +120,22 @@ balanced_panel_data <- panel_data %>%
 id_year_count <- aggregate(Year ~ ID, data = balanced_panel_data, 
                            FUN = function(x) length(unique(x)))
 
-# Check if every ID appears in all the years (2013 to 2023)
-is_balanced_panel <- all(id_year_count$Year == length(2013:2023))
+is_balanced_panel <- all(id_year_count$Year == length(2013:2023)) # Check if every ID appears in all the years (2013 to 2023)
 
 if (is_balanced_panel) {
-  print("The data is a balanced panel.")
+  print("Balanced Panel Data")
 } else {
-  print("The data is not a balanced panel.")
+  print("Unbalanced Panel Data")
 }
 
-# Optionally, print the IDs that do not appear in all years
+# Print the IDs that do not appear in all years (optional task)
 unbalanced_ids <- id_year_count$ID[id_year_count$Year != length(2013:2023)]
 if (length(unbalanced_ids) > 0) {
-  print("IDs that do not appear in all years:")
+  print("IDs that are not present in all years:")
   print(unbalanced_ids)
 }
 
-# Count occurrences of each ID
+# Count the occurrence of each ID
 id_counts <- balanced_panel_data %>%
   count(ID)
 
@@ -148,8 +161,8 @@ summary(balanced_panel_data)
 
 library(dplyr)
 
-# Initialize an empty data frame to store the sampled data
 sampled_data <- data.frame()
+
 
 # Loop through each year to ensure 3455 unique ID-Year combinations
 for (yr in unique(data$Year)) {
@@ -171,8 +184,8 @@ unbalanced_panel_data <- sampled_data
 id_year_count <- aggregate(Year ~ ID, data = unbalanced_panel_data, 
                            FUN = function(x) length(unique(x)))
 
-# Check if every ID appears in all the years (2013 to 2023)
-is_balanced_panel <- all(id_year_count$Year == length(2013:2023))
+is_balanced_panel <- all(id_year_count$Year == length(2013:2023)) # Check if every ID appears in all the years (2013 to 2023)
+
 
 if (is_balanced_panel) {
   print("The data is a balanced panel.")
@@ -180,22 +193,20 @@ if (is_balanced_panel) {
   print("The data is not a balanced panel.")
 }
 
-# Optionally, print the IDs that do not appear in all years
+# Print the IDs that do not appear in all years
 unbalanced_ids <- id_year_count$ID[id_year_count$Year != length(2013:2023)]
 if (length(unbalanced_ids) > 0) {
   print("IDs that do not appear in all years:")
   print(unbalanced_ids)
 }
 
-# Check for duplicate rows in the data
-print(unbalanced_panel_data[duplicated(unbalanced_panel_data), ])
+print(unbalanced_panel_data[duplicated(unbalanced_panel_data), ]) # Check for duplicate rows in the data
 
-# Display the count of observations per year and summary statistics
 count(unbalanced_panel_data, Year)
 summary(unbalanced_panel_data)
 
 ########################
-## Missingness in Balanced Panel
+## Simulate Missingness in Balanced Panel
 ########################
 
 library(VIM)
@@ -212,7 +223,7 @@ balanced_panel_data_mcar_50 <- balanced_panel_data
 balanced_panel_data_mcar_50[mis_simulated_mcar_50, 5] <- NA
 summary(balanced_panel_data_mcar_50)
 
-# Visualize the missing data pattern using the VIM package
+# Visualize the missing data pattern
 aggr(balanced_panel_data_mcar_50, 
      col = c('navyblue', 'red'), 
      numbers = TRUE, 
@@ -241,7 +252,7 @@ aggr(balanced_panel_data_mcar_30,
      gap = 3, 
      ylab = c("Missing data", "Pattern"))
 
-#### 30% ####
+#### 10% ####
 
 p_mis_10 <- 0.10
 num_rows <- nrow(balanced_panel_data)  # Get the number of rows in balanced_panel_data
@@ -274,16 +285,9 @@ mis_simulated_mar_50 <- 0.5 + 0.1 * balanced_panel_data_mar_50$Education +
   0.2 * balanced_panel_data_mar_50$Age + 
   rnorm(nrow(balanced_panel_data_mar_50), 0, 3)
 
-# All below the 50% quantile are set to missing
-mis_simulated_mar_50 <- mis_simulated_mar_50 < quantile(mis_simulated_mar_50, p_mis_50)
-
-# Proportion of missing data
+mis_simulated_mar_50 <- mis_simulated_mar_50 < quantile(mis_simulated_mar_50, p_mis_50) # All below the 50% quantile are set to missing
 mean(as.numeric(mis_simulated_mar_50))
-
-# Set values to NA in IndividualIncome where missingness occurs
-balanced_panel_data_mar_50$IndividualIncome[mis_simulated_mar_50] <- NA
-
-# Summary of IndividualIncome after introducing missingness
+balanced_panel_data_mar_50$Income[mis_simulated_mar_50] <- NA # Set values to NA in Income where missingness occurs
 summary(balanced_panel_data_mar_50)
 
 # Visualize the missing data pattern
@@ -308,16 +312,9 @@ mis_simulated_mar_30 <- 0.7 + 0.1 * balanced_panel_data_mar_30$Education +
   0.2 * balanced_panel_data_mar_30$Age + 
   rnorm(nrow(balanced_panel_data_mar_30), 0, 3)
 
-# All below the 50% quantile are set to missing
-mis_simulated_mar_30 <- mis_simulated_mar_30 < quantile(mis_simulated_mar_30, p_mis_30)
-
-# Proportion of missing data
+mis_simulated_mar_30 <- mis_simulated_mar_30 < quantile(mis_simulated_mar_30, p_mis_30) # All below the 50% quantile are set to missing
 mean(as.numeric(mis_simulated_mar_30))
-
-# Set values to NA in IndividualIncome where missingness occurs
-balanced_panel_data_mar_30$IndividualIncome[mis_simulated_mar_30] <- NA
-
-# Summary of IndividualIncome after introducing missingness
+balanced_panel_data_mar_30$Income[mis_simulated_mar_30] <- NA # Set values to NA in IndividualIncome where missingness occurs
 summary(balanced_panel_data_mar_30)
 
 # Visualize the missing data pattern
@@ -341,16 +338,9 @@ mis_simulated_mar_10 <- 0.1 + 0.1 * balanced_panel_data_mar_10$Education +
   0.2 * balanced_panel_data_mar_10$Age + 
   rnorm(nrow(balanced_panel_data_mar_10), 0, 3)
 
-# All below the 50% quantile are set to missing
-mis_simulated_mar_10 <- mis_simulated_mar_10 < quantile(mis_simulated_mar_10, p_mis_10)
-
-# Proportion of missing data
+mis_simulated_mar_10 <- mis_simulated_mar_10 < quantile(mis_simulated_mar_10, p_mis_10) # All below the 50% quantile are set to missing
 mean(as.numeric(mis_simulated_mar_10))
-
-# Set values to NA in IndividualIncome where missingness occurs
-balanced_panel_data_mar_10$IndividualIncome[mis_simulated_mar_10] <- NA
-
-# Summary of IndividualIncome after introducing missingness
+balanced_panel_data_mar_10$Income[mis_simulated_mar_10] <- NA # Set values to NA in Income where missingness occurs
 summary(balanced_panel_data_mar_10)
 
 # Visualize the missing data pattern
@@ -371,12 +361,12 @@ aggr(balanced_panel_data_mar_10,
 
 p_mis_50 <- .50
 balanced_panel_data_mnar_50 <- balanced_panel_data
-# the missing of a value now also depends on IndividualIncome itself
+# the missing of a value now also depends on Income itself
 mis_simulated_mnar_50 <- 0.5 + .2 * balanced_panel_data_mnar_50$Education + 
   0.1 * balanced_panel_data_mnar_50$Age + 
-  0.5 * balanced_panel_data_mnar_50$IndividualIncome + rnorm(nrow(balanced_panel_data), 0, 3)
+  0.5 * balanced_panel_data_mnar_50$Income + rnorm(nrow(balanced_panel_data), 0, 3)
 mis_simulated_mnar_50 <- mis_simulated_mnar_50 < quantile(mis_simulated_mnar_50, p_mis_50)
-balanced_panel_data_mnar_50$IndividualIncome[mis_simulated_mnar_50] <- NA
+balanced_panel_data_mnar_50$Income[mis_simulated_mnar_50] <- NA
 summary(balanced_panel_data_mnar_50)
 
 # Visualize the missing data pattern
@@ -393,12 +383,12 @@ aggr(balanced_panel_data_mnar_50,
 
 p_mis_30 <- .30
 balanced_panel_data_mnar_30 <- balanced_panel_data
-# the missing of a value now also depends on IndividualIncome itself
+# the missing of a value now also depends on Income itself
 mis_simulated_mnar_30 <- 0.7 + 0.1 * balanced_panel_data_mnar_30$Education + 
   0.2 * balanced_panel_data_mnar_30$Age + 
-  0.5 * balanced_panel_data_mnar_30$IndividualIncome + rnorm(nrow(balanced_panel_data), 0, 3)
+  0.5 * balanced_panel_data_mnar_30$Income + rnorm(nrow(balanced_panel_data), 0, 3)
 mis_simulated_mnar_30 <- mis_simulated_mnar_30 < quantile(mis_simulated_mnar_30, p_mis_30)
-balanced_panel_data_mnar_30$IndividualIncome[mis_simulated_mnar_30] <- NA
+balanced_panel_data_mnar_30$Income[mis_simulated_mnar_30] <- NA
 summary(balanced_panel_data_mnar_30)
 
 # Visualize the missing data pattern
@@ -415,12 +405,12 @@ aggr(balanced_panel_data_mnar_30,
 
 p_mis_10 <- .10
 balanced_panel_data_mnar_10 <- balanced_panel_data
-# the missing of a value now also depends on IndividualIncome itself
+# the missing of a value now also depends on Income itself
 mis_simulated_mnar_10 <- 0.1 + 0.1 * balanced_panel_data_mnar_10$Education + 
   0.2 * balanced_panel_data_mnar_10$Age + 
-  0.5 * balanced_panel_data_mnar_10$IndividualIncome + rnorm(nrow(balanced_panel_data), 0, 3)
+  0.5 * balanced_panel_data_mnar_10$Income + rnorm(nrow(balanced_panel_data), 0, 3)
 mis_simulated_mnar_10 <- mis_simulated_mnar_10 < quantile(mis_simulated_mnar_10, p_mis_10)
-balanced_panel_data_mnar_10$IndividualIncome[mis_simulated_mnar_10] <- NA
+balanced_panel_data_mnar_10$Income[mis_simulated_mnar_10] <- NA
 summary(balanced_panel_data_mnar_10)
 
 # Visualize the missing data pattern
@@ -510,16 +500,10 @@ mis_simulated_mar_50 <- 0.5 + 0.1 * unbalanced_panel_data_mar_50$Education +
   0.2 * unbalanced_panel_data_mar_50$Age + 
   rnorm(nrow(unbalanced_panel_data_mar_50), 0, 3)
 
-# All below the 50% quantile are set to missing
-mis_simulated_mar_50 <- mis_simulated_mar_50 < quantile(mis_simulated_mar_50, p_mis_50)
-
-# Proportion of missing data
+mis_simulated_mar_50 <- mis_simulated_mar_50 < quantile(mis_simulated_mar_50, p_mis_50) # All below the 50% quantile are set to missing
 mean(as.numeric(mis_simulated_mar_50))
 
-# Set values to NA in IndividualIncome where missingness occurs
-unbalanced_panel_data_mar_50$IndividualIncome[mis_simulated_mar_50] <- NA
-
-# Summary of IndividualIncome after introducing missingness
+unbalanced_panel_data_mar_50$Income[mis_simulated_mar_50] <- NA # Set values to NA in Income where missingness occurs
 summary(unbalanced_panel_data_mar_50)
 
 # Visualize the missing data pattern
@@ -542,17 +526,11 @@ mis_simulated_mar_30 <- 0.7 + 0.1 * unbalanced_panel_data_mar_30$Education +
   0.2 * unbalanced_panel_data_mar_30$Age + 
   rnorm(nrow(unbalanced_panel_data_mar_30), 0, 3)
 
-# All below the 50% quantile are set to missing
-mis_simulated_mar_30 <- mis_simulated_mar_30 < quantile(mis_simulated_mar_30, p_mis_30)
-
-# Proportion of missing data
+mis_simulated_mar_30 <- mis_simulated_mar_30 < quantile(mis_simulated_mar_30, p_mis_30) # All below the 50% quantile are set to missing
 mean(as.numeric(mis_simulated_mar_30))
 
-# Set values to NA in IndividualIncome where missingness occurs
-unbalanced_panel_data_mar_30$IndividualIncome[mis_simulated_mar_30] <- NA
-
-# Summary of IndividualIncome after introducing missingness
-summary(unbalanced_panel_data_mar_30)
+unbalanced_panel_data_mar_30$Income[mis_simulated_mar_30] <- NA # Set values to NA in Income where missingness occurs
+summary(unbalanced_panel_data_mar_30) # Summary of Income after introducing missingness
 
 # Visualize the missing data pattern
 aggr(unbalanced_panel_data_mar_30, 
@@ -575,16 +553,10 @@ mis_simulated_mar_10 <- 0.1 + 0.1 * unbalanced_panel_data_mar_10$Education +
   0.2 * unbalanced_panel_data_mar_10$Age + 
   rnorm(nrow(unbalanced_panel_data_mar_10), 0, 3)
 
-# All below the 50% quantile are set to missing
-mis_simulated_mar_10 <- mis_simulated_mar_10 < quantile(mis_simulated_mar_10, p_mis_10)
-
-# Proportion of missing data
+mis_simulated_mar_10 <- mis_simulated_mar_10 < quantile(mis_simulated_mar_10, p_mis_10) # All below the 50% quantile are set to missing
 mean(as.numeric(mis_simulated_mar_10))
 
-# Set values to NA in IndividualIncome where missingness occurs
-unbalanced_panel_data_mar_10$IndividualIncome[mis_simulated_mar_10] <- NA
-
-# Summary of IndividualIncome after introducing missingness
+unbalanced_panel_data_mar_10$Income[mis_simulated_mar_10] <- NA # Set values to NA in Income where missingness occurs
 summary(unbalanced_panel_data_mar_10)
 
 # Visualize the missing data pattern
@@ -608,9 +580,9 @@ unbalanced_panel_data_mnar_50 <- unbalanced_panel_data
 # the missing of a value now also depends on IndividualIncome itself
 mis_simulated_mnar_50 <- 0.5 + 0.1 * unbalanced_panel_data_mnar_50$Education + 
   0.2 * unbalanced_panel_data_mnar_50$Age + 
-  0.5 * unbalanced_panel_data_mnar_50$IndividualIncome + rnorm(nrow(unbalanced_panel_data), 0, 3)
+  0.5 * unbalanced_panel_data_mnar_50$Income + rnorm(nrow(unbalanced_panel_data), 0, 3)
 mis_simulated_mnar_50 <- mis_simulated_mnar_50 < quantile(mis_simulated_mnar_50, p_mis_50)
-unbalanced_panel_data_mnar_50$IndividualIncome[mis_simulated_mnar_50] <- NA
+unbalanced_panel_data_mnar_50$Income[mis_simulated_mnar_50] <- NA
 summary(unbalanced_panel_data_mnar_50)
 
 # Visualize the missing data pattern
@@ -630,9 +602,9 @@ unbalanced_panel_data_mnar_30 <- unbalanced_panel_data
 # the missing of a value now also depends on IndividualIncome itself
 mis_simulated_mnar_30 <-0.7 + 0.1 * unbalanced_panel_data_mnar_30$Education + 
   0.2 * unbalanced_panel_data_mnar_30$Age + 
-  0.5 * unbalanced_panel_data_mnar_30$IndividualIncome + rnorm(nrow(unbalanced_panel_data), 0, 3)
+  0.5 * unbalanced_panel_data_mnar_30$Income + rnorm(nrow(unbalanced_panel_data), 0, 3)
 mis_simulated_mnar_30 <- mis_simulated_mnar_30 < quantile(mis_simulated_mnar_30, p_mis_30)
-unbalanced_panel_data_mnar_30$IndividualIncome[mis_simulated_mnar_30] <- NA
+unbalanced_panel_data_mnar_30$Income[mis_simulated_mnar_30] <- NA
 summary(unbalanced_panel_data_mnar_30)
 
 # Visualize the missing data pattern
@@ -652,9 +624,9 @@ unbalanced_panel_data_mnar_10 <- unbalanced_panel_data
 # the missing of a value now also depends on IndividualIncome itself
 mis_simulated_mnar_10 <- 0.1 + 0.1 * unbalanced_panel_data_mnar_10$Education + 
   0.2 * unbalanced_panel_data_mnar_10$Age + 
-  0.5 * unbalanced_panel_data_mnar_10$IndividualIncome + rnorm(nrow(unbalanced_panel_data), 0, 3)
+  0.5 * unbalanced_panel_data_mnar_10$Income + rnorm(nrow(unbalanced_panel_data), 0, 3)
 mis_simulated_mnar_10 <- mis_simulated_mnar_10 < quantile(mis_simulated_mnar_10, p_mis_10)
-unbalanced_panel_data_mnar_10$IndividualIncome[mis_simulated_mnar_10] <- NA
+unbalanced_panel_data_mnar_10$Income[mis_simulated_mnar_10] <- NA
 summary(unbalanced_panel_data_mnar_10)
 
 # Visualize the missing data pattern
@@ -667,9 +639,9 @@ aggr(unbalanced_panel_data_mnar_10,
      gap = 3, 
      ylab = c("Missing data", "Pattern"))
 
-###################
+#####################################
 ### Data Sets Overview and Formating
-###################
+####################################
 
 ## Format Vriable to Their Originl Format
 convert_to_factors <- function(df) {
@@ -729,78 +701,76 @@ unbalanced_panel_data_mnar_10 <- convert_to_factors(unbalanced_panel_data_mnar_1
 
 library(mice)
 library(broom)
+packageVersion("mice")
 
-Data_Imputation_mice <- function(data, m = 3, maxit = 500, method = 'pmm') {
-  # Select the necessary columns
-  data_temp <- data[c("Year", "Education", "Age", "IndividualIncome")]
-  
-  # Perform MICE imputation
-  mice_imp <- mice(data_temp, method = method, m = m, maxit = maxit)
-  
-  # Return the imputation object
+StartTime_mice <- Sys.time()  # Starting time
+
+Data_Imputation_mice <- function(data, m = 3, maxit = 20, method = 'pmm') {
+  data_temp <- data[c("Year", "Education", "Age", "Income")]
+  mice_imp <- mice(data_temp, method = method, m = m, maxit = maxit) # Perform MICE imputation
   return(mice_imp)
 }
 
 # Apply imputation
-mice_balanced_mcar_50 <- Data_Imputation_mice(balanced_panel_data_mcar_50)
-mice_balanced_mcar_30 <- Data_Imputation_mice(balanced_panel_data_mcar_30)
-mice_balanced_mcar_10 <- Data_Imputation_mice(balanced_panel_data_mcar_10)
+mice_bal_mcar_50 <- Data_Imputation_mice(balanced_panel_data_mcar_50)
+mice_bal_mcar_30 <- Data_Imputation_mice(balanced_panel_data_mcar_30)
+mice_bal_mcar_10 <- Data_Imputation_mice(balanced_panel_data_mcar_10)
 
-mice_balanced_mar_50 <- Data_Imputation_mice(balanced_panel_data_mar_50)
-mice_balanced_mar_30 <- Data_Imputation_mice(balanced_panel_data_mar_30)
-mice_balanced_mar_10 <- Data_Imputation_mice(balanced_panel_data_mar_10)
+mice_bal_mar_50 <- Data_Imputation_mice(balanced_panel_data_mar_50)
+mice_bal_mar_30 <- Data_Imputation_mice(balanced_panel_data_mar_30)
+mice_bal_mar_10 <- Data_Imputation_mice(balanced_panel_data_mar_10)
 
-mice_balanced_mnar_50 <- Data_Imputation_mice(balanced_panel_data_mnar_50)
-mice_balanced_mnar_30 <- Data_Imputation_mice(balanced_panel_data_mnar_30)
-mice_balanced_mnar_10 <- Data_Imputation_mice(balanced_panel_data_mnar_10)
+mice_bal_mnar_50 <- Data_Imputation_mice(balanced_panel_data_mnar_50)
+mice_bal_mnar_30 <- Data_Imputation_mice(balanced_panel_data_mnar_30)
+mice_bal_mnar_10 <- Data_Imputation_mice(balanced_panel_data_mnar_10)
 
-mice_unbalanced_mcar_50 <- Data_Imputation_mice(unbalanced_panel_data_mcar_50)
-mice_unbalanced_mcar_30 <- Data_Imputation_mice(unbalanced_panel_data_mcar_30)
-mice_unbalanced_mcar_10 <- Data_Imputation_mice(unbalanced_panel_data_mcar_10)
+mice_unbal_mcar_50 <- Data_Imputation_mice(unbalanced_panel_data_mcar_50)
+mice_unbal_mcar_30 <- Data_Imputation_mice(unbalanced_panel_data_mcar_30)
+mice_unbal_mcar_10 <- Data_Imputation_mice(unbalanced_panel_data_mcar_10)
 
-mice_unbalanced_mar_50 <- Data_Imputation_mice(unbalanced_panel_data_mar_50)
-mice_unbalanced_mar_30 <- Data_Imputation_mice(unbalanced_panel_data_mar_30)
-mice_unbalanced_mar_10 <- Data_Imputation_mice(unbalanced_panel_data_mar_10)
+mice_unbal_mar_50 <- Data_Imputation_mice(unbalanced_panel_data_mar_50)
+mice_unbal_mar_30 <- Data_Imputation_mice(unbalanced_panel_data_mar_30)
+mice_unbal_mar_10 <- Data_Imputation_mice(unbalanced_panel_data_mar_10)
 
-mice_unbalanced_mnar_50 <- Data_Imputation_mice(unbalanced_panel_data_mnar_50)
-mice_unbalanced_mnar_30 <- Data_Imputation_mice(unbalanced_panel_data_mnar_30)
-mice_unbalanced_mnar_10 <- Data_Imputation_mice(unbalanced_panel_data_mnar_10)
+mice_unbal_mnar_50 <- Data_Imputation_mice(unbalanced_panel_data_mnar_50)
+mice_unbal_mnar_30 <- Data_Imputation_mice(unbalanced_panel_data_mnar_30)
+mice_unbal_mnar_10 <- Data_Imputation_mice(unbalanced_panel_data_mnar_10)
 
 Analyze_mice <- function(mice_imp) {
-  # Fit the linear model
-  model <- with(mice_imp, lm(IndividualIncome ~ Year + Education + Age))
-  
-  # Pool the results
-  pooled_results <- pool(model)
-  
-  # Return the summary of the pooled results
+  model <- with(mice_imp, lm(Income ~ Year + Education + Age))   # Fit the linear model
+  pooled_results <- pool(model) # Pool the results
   return(summary(pooled_results))
 }
 
 # Apply analysis
-summary_balanced_mcar_50 <- Analyze_mice(mice_balanced_mcar_50)
-summary_balanced_mcar_30 <- Analyze_mice(mice_balanced_mcar_30)
-summary_balanced_mcar_10 <- Analyze_mice(mice_balanced_mcar_10)
+analyze_mice_bal_mcar_50 <- Analyze_mice(mice_bal_mcar_50)
+analyze_mice_bal_mcar_30 <- Analyze_mice(mice_bal_mcar_30)
+analyze_mice_bal_mcar_10 <- Analyze_mice(mice_bal_mcar_10)
 
-summary_balanced_mar_50 <- Analyze_mice(mice_balanced_mar_50)
-summary_balanced_mar_30 <- Analyze_mice(mice_balanced_mar_30)
-summary_balanced_mar_10 <- Analyze_mice(mice_balanced_mar_10)
+analyze_mice_bal_mar_50 <- Analyze_mice(mice_bal_mar_50)
+analyze_mice_bal_mar_30 <- Analyze_mice(mice_bal_mar_30)
+analyze_mice_bal_mar_10 <- Analyze_mice(mice_bal_mar_10)
 
-summary_balanced_mnar_50 <- Analyze_mice(mice_balanced_mnar_50)
-summary_balanced_mnar_30 <- Analyze_mice(mice_balanced_mnar_30)
-summary_balanced_mnar_10 <- Analyze_mice(mice_balanced_mnar_10)
+analyze_mice_bal_mnar_50 <- Analyze_mice(mice_bal_mnar_50)
+analyze_mice_bal_mnar_30 <- Analyze_mice(mice_bal_mnar_30)
+analyze_mice_bal_mnar_10 <- Analyze_mice(mice_bal_mnar_10)
 
-summary_unbalanced_mcar_50 <- Analyze_mice(mice_unbalanced_mcar_50)
-summary_unbalanced_mcar_30 <- Analyze_mice(mice_unbalanced_mcar_30)
-summary_unbalanced_mcar_10 <- Analyze_mice(mice_unbalanced_mcar_10)
+analyze_mice_unbal_mcar_50 <- Analyze_mice(mice_unbal_mcar_50)
+analyze_mice_unbal_mcar_30 <- Analyze_mice(mice_unbal_mcar_30)
+analyze_mice_unbal_mcar_10 <- Analyze_mice(mice_unbal_mcar_10)
 
-summary_unbalanced_mar_50 <- Analyze_mice(mice_unbalanced_mar_50)
-summary_unbalanced_mar_30 <- Analyze_mice(mice_unbalanced_mar_30)
-summary_unbalanced_mar_10 <- Analyze_mice(mice_unbalanced_mar_10)
+analyze_mice_unbal_mar_50 <- Analyze_mice(mice_unbal_mar_50)
+analyze_mice_unbal_mar_30 <- Analyze_mice(mice_unbal_mar_30)
+analyze_mice_unbal_mar_10 <- Analyze_mice(mice_unbal_mar_10)
 
-summary_unbalanced_mnar_50 <- Analyze_mice(mice_unbalanced_mnar_50)
-summary_unbalanced_mnar_30 <- Analyze_mice(mice_unbalanced_mnar_30)
-summary_unbalanced_mnar_10 <- Analyze_mice(mice_unbalanced_mnar_10)
+analyze_mice_unbal_mnar_50 <- Analyze_mice(mice_unbal_mnar_50)
+analyze_mice_unbal_mnar_30 <- Analyze_mice(mice_unbal_mnar_30)
+analyze_mice_unbal_mnar_10 <- Analyze_mice(mice_unbal_mnar_10)
+
+EndTime_mice <- Sys.time()  # Ending time
+
+ExecutionTime_mice <- EndTime_mice - StartTime_mice
+print(ExecutionTime_mice) # Time difference of 1.432353 mins
 
 ######################
 ## mitml package
@@ -810,47 +780,60 @@ library(mitml)
 library(dplyr)
 library(plm)
 library(lmtest)
+packageVersion("mitml")
 
-## Balanced Panel
+## Balanced Panel##
+###################
 
-# Cheching the effects
+pdata_bal <- pdata.frame(balanced_panel_data, index = c("ID", "Year")) # Convert the data frame to a panel data frame
 
-# Convert the data frame to a panel data frame
-pdata_bal <- pdata.frame(balanced_panel_data, index = c("ID", "Year"))
+# Estimate the models
+fe_model <- plm(Income ~ Year + Education + Age, data = pdata_bal, model = "within")
+re_model <- plm(Income ~ Year + Education + Age, data = pdata_bal, model = "random")
 
-# Estimate the fixed effects model
-fe_model <- plm(IndividualIncome ~ Year + Education + Age, data = pdata_bal, model = "within")
-
-# Estimate the random effects model
-re_model <- plm(IndividualIncome ~ Year + Education + Age, data = pdata_bal, model = "random")
-
-# Perform the Hausman test to compare the fixed and random effects models
-hausman_test <- phtest(fe_model, re_model)
-
-# Print the results of the Hausman test
+hausman_test <- phtest(fe_model, re_model) # Perform the Hausman test to compare the fixed and random effects models
 print(hausman_test)
-# p-value = 0.592, which is > 0.05, null hypothesis cannot be rejected.
-# implying that the random effects in Education and Age is more appropriate.
+# p-value is 0.2185, which is > 0.05. S0 the null hypothesis cannot be rejected.
+# This implies that the random effects in Education and Age is more appropriate.
 
-# Define a function to perform the imputation, model fitting, and additional steps
+StartTime_mitml <- Sys.time()  # Starting time
+
+# Function to impute data
 Data_Imputation_mitml_Bal <- function(panel_data) {
-  # Step 1: Prepare the data by selecting relevant columns
-  selected_data <- panel_data[c("ID", "Year", "Education", "Age", "IndividualIncome")]
+  
+  selected_data <- panel_data[c("ID", "Year", "Education", "Age", "Income")]
   
   # Define the type vector and assign column names
   type <- c(0, -2, 3, 3, 1)
   names(type) <- colnames(selected_data)
   
-  # Impute missing data
-  imputed_data <- panImpute(selected_data, type = type, n.burn = 1000, n.iter = 100, m = 3)
-  
-  # Extract imputed datasets
+  imputed_data <- panImpute(selected_data, type = type, n.burn = 1000, n.iter = 100, m = 3)   # Impute missing data
   imputed_list <- mitmlComplete(imputed_data, print = "all")
+  return(imputed_list)
+}
+
+
+# Apply the function to each dataset
+mitml_bal_mcar_50 <- Data_Imputation_mitml_Bal(balanced_panel_data_mcar_50)
+mitml_bal_mcar_30 <- Data_Imputation_mitml_Bal(balanced_panel_data_mcar_30)
+mitml_bal_mcar_10 <- Data_Imputation_mitml_Bal(balanced_panel_data_mcar_10)
+
+mitml_bal_mar_50 <- Data_Imputation_mitml_Bal(balanced_panel_data_mar_50)
+mitml_bal_mar_30 <- Data_Imputation_mitml_Bal(balanced_panel_data_mar_30)
+mitml_bal_mar_10 <- Data_Imputation_mitml_Bal(balanced_panel_data_mar_10)
+
+mitml_bal_mnar_50 <- Data_Imputation_mitml_Bal(balanced_panel_data_mnar_50)
+mitml_bal_mnar_30 <- Data_Imputation_mitml_Bal(balanced_panel_data_mnar_30)
+mitml_bal_mnar_10 <- Data_Imputation_mitml_Bal(balanced_panel_data_mnar_10)
+
+# Function to extract coefficients
+Analyze_mitml_Bal <- function(imputed_list) {
+  # Step 1: Impute dataset
   
-  # Step 2: Perform Breusch-Pagan test to check for a panel effect
+  # Step 2: Perform Breusch-Pagan test to check the panel effect
   breusch_pagan_results <- lapply(imputed_list, function(x) {
     pdata <- pdata.frame(x, index = c("ID", "Year"))
-    bp_test <- plmtest(plm(IndividualIncome ~ Education + Age, data = pdata, model = "pooling"), type = "bp")
+    bp_test <- plmtest(plm(Income ~ Education + Age, data = pdata, model = "pooling"), type = "bp")
     return(bp_test$p.value)
   })
   
@@ -859,90 +842,95 @@ Data_Imputation_mitml_Bal <- function(panel_data) {
     pdata <- pdata.frame(imputed_list[[i]], index = c("ID", "Year"))
     if (breusch_pagan_results[[i]] > 0.05) {
       # No panel effect, proceed with Pooled OLS model
-      return(plm(IndividualIncome ~ Year + Education + Age, data = pdata, model = "pooling"))
+      return(plm(Income ~ Year + Education + Age, data = pdata, model = "pooling"))
     } else {
       # Panel effect exists, proceed to Hausman test
-      random_model <- plm(IndividualIncome ~ Year + Education + Age, data = pdata, model = "random")
-      fixed_model <- plm(IndividualIncome ~ Year + Education + Age, data = pdata, model = "within")
+      random_model <- plm(Income ~ Year + Education + Age, data = pdata, model = "random")
+      fixed_model <- plm(Income ~ Year + Education + Age, data = pdata, model = "within")
       
-      # Perform Hausman test
-      hausman_test <- phtest(fixed_model, random_model)
+      
+      hausman_test <- phtest(fixed_model, random_model) # Perform Hausman test
       
       if (hausman_test$p.value <= 0.05) {
-        # Correlation exists, use Fixed Effects Model
         print("Fixed Effect Model:")
-        return(fixed_model)
+        return(fixed_model) # Use Fixed Effects model if correlation exists
       } else {
-        # No correlation, use Random Effects Model
         print("Random Effect Model:")
-        return(random_model)
+        return(random_model) # Use Random Effect model if corellation does not exists
       }
     }
   })
   
-  # Step 4: Pool the results
+  # Step 4: Pool the coefficients and return summary
   pooled_results <- testEstimates(model_list)
-  
-  # Return the pooled results summary
-  return(summary(pooled_results))
+  return(pooled_results)
 }
 
+# Apply the function to each dataset and store results
+analyze_mitml_bal_mcar_50 <- Analyze_mitml_Bal(mitml_bal_mcar_50)
+analyze_mitml_bal_mcar_30 <- Analyze_mitml_Bal(mitml_bal_mcar_30)
+analyze_mitml_bal_mcar_10 <- Analyze_mitml_Bal(mitml_bal_mcar_10)
 
-# Apply the function to each dataset in the list and store results
-Data_Imputation_mitml_Bal(balanced_panel_data_mcar_50)
-Data_Imputation_mitml_Bal(balanced_panel_data_mcar_30)
-Data_Imputation_mitml_Bal(balanced_panel_data_mcar_10)
-Data_Imputation_mitml_Bal(balanced_panel_data_mar_50)
-Data_Imputation_mitml_Bal(balanced_panel_data_mar_30)
-Data_Imputation_mitml_Bal(balanced_panel_data_mar_10)
-Data_Imputation_mitml_Bal(balanced_panel_data_mnar_50)
-Data_Imputation_mitml_Bal(balanced_panel_data_mnar_30)
-Data_Imputation_mitml_Bal(balanced_panel_data_mnar_10)
+analyze_mitml_bal_mar_50 <- Analyze_mitml_Bal(mitml_bal_mar_50)
+analyze_mitml_bal_mar_30 <- Analyze_mitml_Bal(mitml_bal_mar_30)
+analyze_mitml_bal_mar_10 <- Analyze_mitml_Bal(mitml_bal_mar_10)
 
-# Unbalanced Panel
+analyze_mitml_bal_mnar_50 <- Analyze_mitml_Bal(mitml_bal_mnar_50)
+analyze_mitml_bal_mnar_30 <- Analyze_mitml_Bal(mitml_bal_mnar_30)
+analyze_mitml_bal_mnar_10 <- Analyze_mitml_Bal(mitml_bal_mnar_10)
 
-# Cheching the effects
+## Unbalanced Panel ##
+#####################
 
-# Convert the data frame to a panel data frame
-pdata_unbal <- pdata.frame(unbalanced_panel_data, index = c("ID", "Year"))
+pdata_unbal <- pdata.frame(unbalanced_panel_data, index = c("ID", "Year")) # Convert the data frame to a panel data frame
 
-# Estimate the fixed effects model
-fe_model <- plm(IndividualIncome ~ Year + Education + Age, data = pdata_unbal, model = "within")
+# Estimate the models
+fe_model <- plm(Income ~ Year + Education + Age, data = pdata_unbal, model = "within")
+re_model <- plm(Income ~ Year + Education + Age, data = pdata_unbal, model = "random")
 
-# Estimate the random effects model
-re_model <- plm(IndividualIncome ~ Year + Education + Age, data = pdata_unbal, model = "random")
-
-# Perform the Hausman test to compare the fixed and random effects models
-hausman_test <- phtest(fe_model, re_model)
-
-# Print the results of the Hausman test
+hausman_test <- phtest(fe_model, re_model) # Perform the Hausman test to compare the fixed and random effects models
 print(hausman_test)
-# p-value = 9.944e-09, which is < 0.05, null hypothesis can be rejected.
+# p-value is 2.2e-16, which is < 0.05. So null hypothesis can be rejected.
 # implying that the fixed effects in Education and Age is more appropriate.
 
-# Define a function to perform the imputation, model fitting, and additional steps
+# Function to impute data for unbalanced panels
 Data_Imputation_mitml_Unbal <- function(panel_data) {
-  
-  # Step 1: Prepare the data by ungrouping and selecting relevant columns
+  # Prepare the data by ungrouping and selecting relevant columns
   panel_data <- panel_data %>% 
     ungroup()
   
-  selected_data <- as.data.frame(panel_data[c("ID", "Year", "Education", "Age", "IndividualIncome")])
+  selected_data <- as.data.frame(panel_data[c("ID", "Year", "Education", "Age", "Income")])
   
   # Define the type vector and assign column names
   type <- c(0, -2, 2, 2, 1) 
   names(type) <- colnames(selected_data)
   
-  # Impute missing data
-  imputed_data <- panImpute(selected_data, type = type, n.burn = 1000, n.iter = 100, m = 3)
-  
-  # Extract imputed datasets
-  imputed_list <- mitmlComplete(imputed_data, print = "all")
+  imputed_data <- panImpute(selected_data, type = type, n.burn = 1000, n.iter = 100, m = 3)   # Impute missing data
+  imputed_list <- mitmlComplete(imputed_data, print = "all")   # Extract imputed datasets
+  return(imputed_list)
+}
+
+# Apply the function to each dataset
+mitml_unbal_mcar_50 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mcar_50)
+mitml_unbal_mcar_30 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mcar_30)
+mitml_unbal_mcar_10 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mcar_10)
+
+mitml_unbal_mar_50 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mar_50)
+mitml_unbal_mar_30 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mar_30)
+mitml_unbal_mar_10 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mar_10)
+
+mitml_unbal_mnar_50 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mnar_50)
+mitml_unbal_mnar_30 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mnar_30)
+mitml_unbal_mnar_10 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mnar_10)
+
+# Function to analyze imputed data and extract coefficients for unbalanced panels
+Analyze_mitml_Unbal <- function(imputed_list) {
+  # Step 01: Impute the dataset
   
   # Step 2: Perform Breusch-Pagan test to check for a panel effect
   breusch_pagan_results <- lapply(imputed_list, function(x) {
     pdata <- pdata.frame(x, index = c("ID", "Year"))
-    bp_test <- plmtest(plm(IndividualIncome ~  Year + Education + Age, data = pdata, model = "pooling"), type = "bp")
+    bp_test <- plmtest(plm(Income ~ Education + Age, data = pdata, model = "pooling"), type = "bp")
     return(bp_test$p.value)
   })
   
@@ -950,59 +938,65 @@ Data_Imputation_mitml_Unbal <- function(panel_data) {
   model_list <- lapply(1:length(imputed_list), function(i) {
     pdata <- pdata.frame(imputed_list[[i]], index = c("ID", "Year"))
     if (breusch_pagan_results[[i]] > 0.05) {
-      # No panel effect, proceed with Pooled OLS model
-      return(plm(IndividualIncome ~  Year + Education + Age, data = pdata, model = "pooling"))
+      # Pooled OLS for no panel effect
+      return(plm(Income ~ Year + Education + Age, data = pdata, model = "pooling"))
     } else {
-      # Panel effect exists, proceed to Hausman test
-      random_model <- plm(IndividualIncome ~  Year + Education + Age, data = pdata, model = "random")
-      fixed_model <- plm(IndividualIncome ~  Year + Education + Age, data = pdata, model = "within")
+      # Hausman test if panel effect exists
+      random_model <- plm(Income ~ Year + Education + Age, data = pdata, model = "random")
+      fixed_model <- plm(Income ~ Year + Education + Age, data = pdata, model = "within")
       
-      # Perform Hausman test
-      hausman_test <- phtest(fixed_model, random_model)
+      hausman_test <- phtest(fixed_model, random_model) # Hausman test
       
       if (hausman_test$p.value <= 0.05) {
-        # Correlation exists, use Fixed Effects Model
         print("Fixed Effects")
-        return(fixed_model)
+        return(fixed_model) # Fixed Effect model if correlation exist
+        
       } else {
-        # No correlation, use Random Effects Model
         print("Random Effects")
-        return(random_model)
+        return(random_model) # Random Effect model if the correlation does not exists
       }
     }
   })
   
-  # Step 4: Pool the results
+  # Step 4: Pool and the coefficients
   pooled_results <- testEstimates(model_list)
   
   # Return the pooled results summary
-  return(summary(pooled_results))
+  return(pooled_results)
 }
 
-# Apply the function to each dataset in the list and store results
-Data_Imputation_mitml_Unbal(unbalanced_panel_data_mcar_50)
-Data_Imputation_mitml_Unbal(unbalanced_panel_data_mcar_30)
-Data_Imputation_mitml_Unbal(unbalanced_panel_data_mcar_10)
-Data_Imputation_mitml_Unbal(unbalanced_panel_data_mar_50)
-Data_Imputation_mitml_Unbal(unbalanced_panel_data_mar_30)
-Data_Imputation_mitml_Unbal(unbalanced_panel_data_mar_10)
-Data_Imputation_mitml_Unbal(unbalanced_panel_data_mnar_50)
-Data_Imputation_mitml_Unbal(unbalanced_panel_data_mnar_30)
-Data_Imputation_mitml_Unbal(unbalanced_panel_data_mnar_10)
+# Apply the analysis function to each set of imputed datasets
+analyze_mitml_unbal_mcar_50 <- Analyze_mitml_Unbal(mitml_unbal_mcar_50)
+analyze_mitml_unbal_mcar_30 <- Analyze_mitml_Unbal(mitml_unbal_mcar_30)
+analyze_mitml_unbal_mcar_10 <- Analyze_mitml_Unbal(mitml_unbal_mcar_10)
+
+analyze_mitml_unbal_mar_50 <- Analyze_mitml_Unbal(mitml_unbal_mar_50)
+analyze_mitml_unbal_mar_30 <- Analyze_mitml_Unbal(mitml_unbal_mar_30)
+analyze_mitml_unbal_mar_10 <- Analyze_mitml_Unbal(mitml_unbal_mar_10)
+
+analyze_mitml_unbal_mnar_50 <- Analyze_mitml_Unbal(mitml_unbal_mnar_50)
+analyze_mitml_unbal_mnar_30 <- Analyze_mitml_Unbal(mitml_unbal_mnar_30)
+analyze_mitml_unbal_mnar_10 <- Analyze_mitml_Unbal(mitml_unbal_mnar_10)
+
+EndTime_mitml <- Sys.time()  # Ending time
+
+ExecutionTime_mitml <- EndTime_mitml - StartTime_mitml
+print(ExecutionTime_mitml) # Time difference of 1.419402 mins
 
 ############################
 ## Amelia package
 ############################
 
 library(Amelia)
+packageVersion("Amelia")
 
-# Define the function for panel data conversion and imputation
+# Function to impute data
 Data_Imputation_Amelia <- function(data) {
   
   # Convert the data to panel data using plm package
   pdata <- pdata.frame(data, index = c("ID", "Year"))
-  pdata = pdata[c("ID", "Year", "Education", "Age", "IndividualIncome")]
-  pdata$Year <- as.numeric(as.character(pdataX$Year))
+  pdata = pdata[c("ID", "Year", "Education", "Age", "Income")]
+  pdata$Year <- as.numeric(as.character(pdata$Year))
   
   
   # Perform the imputation using Amelia
@@ -1013,8 +1007,6 @@ Data_Imputation_Amelia <- function(data) {
     cs = "ID",
     noms = "Education"
   )
-  
-  # Return the fitted Amelia object
   return(amelia_fit)
 }
 
@@ -1044,19 +1036,19 @@ amelia_unbal_mnar_30 <- Data_Imputation_Amelia(unbalanced_panel_data_mnar_30)
 amelia_unbal_mnar_10 <- Data_Imputation_Amelia(unbalanced_panel_data_mnar_10)
 
 
-# Function to perform analysis on imputed data
+StartTime_amelia <- Sys.time()  # Starting time
+
+# Function to generate coefficients and intercepts
 Analyze_Amelia <- function(data) {
   
-  # Step 1: Perform data imputation
+  # Step 1: Imputation and extraction of data
   amelia_fit <- Data_Imputation_Amelia(data)
-  
-  # Extract imputed datasets
   imputed_list <- amelia_fit$imputations
   
   # Step 2: Perform Breusch-Pagan test to check for a panel effect
   breusch_pagan_results <- lapply(imputed_list, function(x) {
     pdata <- pdata.frame(x, index = c("ID", "Year"))
-    bp_test <- plmtest(plm(IndividualIncome ~ Year + Education + Age, data = pdata, model = "pooling"), type = "bp")
+    bp_test <- plmtest(plm(Income ~ Year + Education + Age, data = pdata, model = "pooling"), type = "bp")
     return(bp_test$p.value)
   })
   
@@ -1064,33 +1056,28 @@ Analyze_Amelia <- function(data) {
   model_list <- lapply(1:length(imputed_list), function(i) {
     pdata <- pdata.frame(imputed_list[[i]], index = c("ID", "Year"))
     if (breusch_pagan_results[[i]] > 0.05) {
-      # No panel effect, proceed with Pooled OLS model
-      return(plm(IndividualIncome ~ Year + Education + Age, data = pdata, model = "pooling"))
+      # Pooled OLS for no panel effect
+      return(plm(Income ~ Year + Education + Age, data = pdata, model = "pooling"))
     } else {
-      # Panel effect exists, proceed to Hausman test
-      random_model <- plm(IndividualIncome ~ Year + Education + Age, data = pdata, model = "random")
-      fixed_model <- plm(IndividualIncome ~ Year + Education + Age, data = pdata, model = "within")
+      # Hausman test if panel effect exists
+      random_model <- plm(Income ~ Year + Education + Age, data = pdata, model = "random")
+      fixed_model <- plm(Income ~ Year + Education + Age, data = pdata, model = "within")
       
-      # Perform Hausman test
-      hausman_test <- phtest(fixed_model, random_model)
+      hausman_test <- phtest(fixed_model, random_model) # Hausman test
       
       if (hausman_test$p.value <= 0.05) {
-        # Correlation exists, use Fixed Effects Model
         print("Fixed Effects")
-        return(fixed_model)
+        return(fixed_model) # Fixed Effect model if correlation exists
       } else {
-        # No correlation, use Random Effects Model
         print("Random Effects")
-        return(random_model)
+        return(random_model) # Random Effect model if correlation does not exists
       }
     }
   })
   
-  # Step 4: Pool the results
+  # Step 4: Pool and return the coefficients
   pooled_results <- testEstimates(model_list)
-  
-  # Return the pooled results summary
-  return(summary(pooled_results))
+  return(pooled_results)
 }
 
 # Apply the function to each dataset and store results
@@ -1118,75 +1105,521 @@ analyze_amelia_unbal_mnar_50 <- Analyze_Amelia(unbalanced_panel_data_mnar_50)
 analyze_amelia_unbal_mnar_30 <- Analyze_Amelia(unbalanced_panel_data_mnar_30)
 analyze_amelia_unbal_mnar_10 <- Analyze_Amelia(unbalanced_panel_data_mnar_10)
 
+EndTime_amelia <- Sys.time()  # Ending time
 
-
-
-
-
-
+ExecutionTime_amelia <- EndTime_amelia - StartTime_amelia
+print(ExecutionTime_amelia) # Time difference of 1.444227 mins
 
 ############################
 ## LSTM Network
 ############################
 
-
 library(keras)
-
-# Extract necessary columns: ID, Year, Age, Education, and IndividualIncome
-input_data <- balanced_panel_data_mcar_50 %>%
-  select(Age, starts_with("Education"), IndividualIncome)
-
-# Temporarily fill missing values in IndividualIncome with the column mean for training
-temp_data <- input_data
-temp_data$IndividualIncome[is.na(temp_data$IndividualIncome)] <- mean(temp_data$IndividualIncome, na.rm = TRUE)
-
-# Convert the data to a 3D array suitable for LSTM
-train_array <- array(as.matrix(temp_data), dim = c(nrow(temp_data), 1, ncol(temp_data)))
-
-# Define LSTM model
-model <- keras_model_sequential() %>%
-  layer_lstm(units = 50, input_shape = c(1, ncol(temp_data)), return_sequences = FALSE) %>%
-  layer_dense(units = 1)
-
-# Compile the model
-model %>% compile(
-  loss = "mean_squared_error",
-  optimizer = optimizer_adam()
-)
-
-# Fit the model (training)
-history <- model %>% fit(
-  x = train_array,
-  y = temp_data$IndividualIncome,  # Target is the IndividualIncome column
-  epochs = 50,
-  batch_size = 32
-)
-
-# Predict values for the missing data
-predicted_values <- model %>% predict(train_array)
-
-# Ensure predicted values are reshaped to match the missing indices
-predicted_values <- as.vector(predicted_values)  # Flatten the predicted values
-
-# Replace missing values in the original dataset with predicted values
-balanced_panel_data_mcar_50$IndividualIncome[is.na(balanced_panel_data_mcar_50$IndividualIncome)] <- predicted_values[is.na(balanced_panel_data_mcar_50$IndividualIncome)]
-
-# The dataset now has imputed values
-balanced_panel_data_mcar_50
+library(dplyr)
+library(plm)
+packageVersion("keras")
 
 
+# Function to impute the datasets
+Data_Imputation_LSTM <- function(data) {
+  
+  # Temporarily replace the missing values with mean
+  DataTemp <- data %>%
+    mutate(Income = ifelse(is.na(Income), mean(Income, na.rm = TRUE), Income))
+  
+  # Convert 'Education' to numeric to make it more compatible with the model and including other numeric columns
+  DataEncoded <- DataTemp %>%
+    mutate(Education = as.factor(Education)) %>%
+    select(Age, Income, Education)
+  
+  DataEncoded <- as.data.frame(model.matrix(~ Education - 1, data = DataEncoded))
+  
+  InputData <- cbind(Age = DataTemp$Age, Income = DataTemp$Income, DataEncoded)
+  
+  CompleteCase <- InputData[!is.na(InputData$Income), ]
+  
+  TrainArray <- array(as.matrix(CompleteCase), dim = c(nrow(CompleteCase), 1, ncol(CompleteCase)))   # Because 3D array is more suitable for LSTM
+  
+  # define and compile the LSTM model
+  model <- keras_model_sequential() %>%
+    layer_lstm(units = 50, input_shape = c(1, ncol(CompleteCase)), return_sequences = FALSE) %>%
+    layer_dense(units = 1)
+  
+  model %>% compile(
+    loss = "mean_squared_error",
+    optimizer = optimizer_adam()
+  )
+  
+  # Train the model
+  model %>% fit(
+    x = TrainArray,
+    y = CompleteCase$Income,  # Target is the Income column
+    epochs = 50,
+    batch_size = 32
+  )
+  
+  # Predict and replacing the missing values
+  MissingCase <- InputData[is.na(data$Income), ]
+  if (nrow(MissingCase) > 0) {
+    MissingArray <- array(as.matrix(MissingCase), dim = c(nrow(MissingCase), 1, ncol(MissingCase)))
+    PredictedValue <- model %>% predict(MissingArray)
+    data$Income[is.na(data$Income)] <- PredictedValue
+  }
+  
+  return(data)
+}
+
+# Apply the function to the dataset
+lstm_bal_mcar_50 <- Data_Imputation_LSTM(balanced_panel_data_mcar_50)
+lstm_bal_mcar_30 <- Data_Imputation_LSTM(balanced_panel_data_mcar_30)
+lstm_bal_mcar_10 <- Data_Imputation_LSTM(balanced_panel_data_mcar_10)
+
+lstm_bal_mar_50 <- Data_Imputation_LSTM(balanced_panel_data_mar_50)
+lstm_bal_mar_30 <- Data_Imputation_LSTM(balanced_panel_data_mar_30)
+lstm_bal_mar_10 <- Data_Imputation_LSTM(balanced_panel_data_mar_10)
+
+lstm_bal_mnar_50 <- Data_Imputation_LSTM(balanced_panel_data_mnar_50)
+lstm_bal_mnar_30 <- Data_Imputation_LSTM(balanced_panel_data_mnar_30)
+lstm_bal_mnar_10 <- Data_Imputation_LSTM(balanced_panel_data_mnar_10)
+
+lstm_unbal_mcar_50 <- Data_Imputation_LSTM(unbalanced_panel_data_mcar_50)
+lstm_unbal_mcar_30 <- Data_Imputation_LSTM(unbalanced_panel_data_mcar_30)
+lstm_unbal_mcar_10 <- Data_Imputation_LSTM(unbalanced_panel_data_mcar_10)
+
+lstm_unbal_mar_50 <- Data_Imputation_LSTM(unbalanced_panel_data_mar_50)
+lstm_unbal_mar_30 <- Data_Imputation_LSTM(unbalanced_panel_data_mar_30)
+lstm_unbal_mar_10 <- Data_Imputation_LSTM(unbalanced_panel_data_mar_10)
+
+lstm_unbal_mnar_50 <- Data_Imputation_LSTM(unbalanced_panel_data_mnar_50)
+lstm_unbal_mnar_30 <- Data_Imputation_LSTM(unbalanced_panel_data_mnar_30)
+lstm_unbal_mnar_10 <- Data_Imputation_LSTM(unbalanced_panel_data_mnar_10)
 
 
+StartTime_LSTM <- Sys.time()  # Starting time
+
+# Function to generate coefficients and intercepts
+Analyze_LSTM <- function(data) {
+  
+  # Step 1: Imputa the missing values and convert the data into panel data
+  imputed_data <- Data_Imputation_LSTM(data)
+  pdata <- pdata.frame(imputed_data, index = c("ID", "Year"))
+  
+  # Step 2: Perform Breusch-Pagan test to check the panel effects
+  bp_test <- plmtest(plm(Income ~ Year + Education + Age, data = pdata, model = "pooling"), type = "bp")
+  
+  # Step 3: Based on the Breusch-Pagan test use appropriate models
+  if (bp_test$p.value > 0.05) {
+    # Pooled OLS for no panel effect
+    model <- plm(Income ~ Year + Education + Age, data = pdata, model = "pooling")
+  } else {
+    # Hausman test if panel effect exist
+    random_model <- plm(Income ~ Year + Education + Age, data = pdata, model = "random")
+    fixed_model <- plm(Income ~ Year + Education + Age, data = pdata, model = "within")
+    
+    hausman_test <- phtest(fixed_model, random_model)
+    
+    if (hausman_test$p.value <= 0.05) {
+      model <- fixed_model # Fixed effect model if correlation exists
+    } else {
+      model <- random_model # Random Effect model if correlation does not exist
+    }
+  }
+  
+  # Step 4: Return the model summary
+  return(summary(model))
+}
+
+# Apply the function to each dataset and store results
+analyze_lstm_bal_mcar_50 <- Analyze_LSTM(balanced_panel_data_mcar_50)
+analyze_lstm_bal_mcar_30 <- Analyze_LSTM(balanced_panel_data_mcar_30)
+analyze_lstm_bal_mcar_10 <- Analyze_LSTM(balanced_panel_data_mcar_10)
+
+analyze_lstm_bal_mar_50 <- Analyze_LSTM(balanced_panel_data_mar_50)
+analyze_lstm_bal_mar_30 <- Analyze_LSTM(balanced_panel_data_mar_30)
+analyze_lstm_bal_mar_10 <- Analyze_LSTM(balanced_panel_data_mar_10)
+
+analyze_lstm_bal_mnar_50 <- Analyze_LSTM(balanced_panel_data_mnar_50)
+analyze_lstm_bal_mnar_30 <- Analyze_LSTM(balanced_panel_data_mnar_30)
+analyze_lstm_bal_mnar_10 <- Analyze_LSTM(balanced_panel_data_mnar_10)
+
+analyze_lstm_unbal_mcar_50 <- Analyze_LSTM(unbalanced_panel_data_mcar_50)
+analyze_lstm_unbal_mcar_30 <- Analyze_LSTM(unbalanced_panel_data_mcar_30)
+analyze_lstm_unbal_mcar_10 <- Analyze_LSTM(unbalanced_panel_data_mcar_10)
+
+analyze_lstm_unbal_mar_50 <- Analyze_LSTM(unbalanced_panel_data_mar_50)
+analyze_lstm_unbal_mar_30 <- Analyze_LSTM(unbalanced_panel_data_mar_30)
+analyze_lstm_unbal_mar_10 <- Analyze_LSTM(unbalanced_panel_data_mar_10)
+
+analyze_lstm_unbal_mnar_50 <- Analyze_LSTM(unbalanced_panel_data_mnar_50)
+analyze_lstm_unbal_mnar_30 <- Analyze_LSTM(unbalanced_panel_data_mnar_30)
+analyze_lstm_unbal_mnar_10 <- Analyze_LSTM(unbalanced_panel_data_mnar_10)
+
+EndTime_LSTM <- Sys.time()  # Ending time
+
+ExecutionTime_LSTM <- EndTime_LSTM - StartTime_LSTM
+print(ExecutionTime_LSTM) # Time difference of 20.0069 mins
+
+#############################
+# Distribution Comparasion ##
+#############################
+
+##### mice #####
+
+miceData <- function(data){
+  miceImp <- complete(data, 1)
+  return(miceImp)
+}
+
+# Extract imputed dataset
+mice_imp_bal_mcar_50 <- miceData(mice_bal_mcar_50)
+mice_imp_bal_mcar_30 <- miceData(mice_bal_mcar_30)
+mice_imp_bal_mcar_10 <- miceData(mice_bal_mcar_10)
+
+mice_imp_bal_mar_50 <- miceData(mice_bal_mar_50)
+mice_imp_bal_mar_30 <- miceData(mice_bal_mar_30)
+mice_imp_bal_mar_10 <- miceData(mice_bal_mar_10)
+
+mice_imp_bal_mnar_50 <- miceData(mice_bal_mnar_50)
+mice_imp_bal_mnar_30 <- miceData(mice_bal_mnar_30)
+mice_imp_bal_mnar_10 <- miceData(mice_bal_mnar_10)
+
+mice_imp_unbal_mcar_50 <- miceData(mice_unbal_mcar_50)
+mice_imp_unbal_mcar_30 <- miceData(mice_unbal_mcar_30)
+mice_imp_unbal_mcar_10 <- miceData(mice_unbal_mcar_10)
+
+mice_imp_unbal_mar_50 <- miceData(mice_unbal_mar_50)
+mice_imp_unbal_mar_30 <- miceData(mice_unbal_mar_30)
+mice_imp_unbal_mar_10 <- miceData(mice_unbal_mar_10)
+
+mice_imp_unbal_mnar_50 <- miceData(mice_unbal_mnar_50)
+mice_imp_unbal_mnar_30 <- miceData(mice_unbal_mnar_30)
+mice_imp_unbal_mnar_10 <- miceData(mice_unbal_mnar_10)
+
+# plot distribution
+IncDist_mice <- function(data, col){
+  DataTemp_mice <- density(data$Income, na.rm = TRUE)
+  lines(DataTemp_mice, col = col, lwd = 2)
+}
+
+DataTemp_mice <- density(balanced_panel_data$Income, na.rm = TRUE)
+plot(DataTemp_mice, 
+     main = "Income Distributions from mice - Balanced panel", 
+     xlab = "Income", 
+     ylab = "Density",
+     lwd = 2, col = "black")
+
+###balanced data
+
+IncDist_mice(mice_imp_bal_mcar_50, "blue")
+IncDist_mice(mice_imp_bal_mcar_30, "red")
+IncDist_mice(mice_imp_bal_mcar_10, "pink")
+
+IncDist_mice(mice_imp_bal_mar_50, "skyblue")
+IncDist_mice(mice_imp_bal_mar_30, "violet")
+IncDist_mice(mice_imp_bal_mar_10, "yellow")
+
+IncDist_mice(mice_imp_bal_mnar_50, "orange")
+IncDist_mice(mice_imp_bal_mnar_30, "green")
+IncDist_mice(mice_imp_bal_mnar_10, "brown")
+
+legend("topright", 
+       legend = c("Initial Data", 
+                  "bal_mcar_50", "bal_mcar_30", "bal_mcar_10", 
+                  "bal_mar_50", "bal_mar_30", "bal_mar_10", 
+                  "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
+       col = c("black", "blue", "red", "pink", "skyblue", "violet", "yellow", 
+               "orange", "green", "brown"),
+       lwd = 2)
+
+###Unbalanced data
+
+DataTemp_mice <- density(unbalanced_panel_data$Income, na.rm = TRUE)
+plot(DataTemp_mice, 
+     main = "Income Distributions from mice - Unbalanced panel", 
+     xlab = "Income", 
+     ylab = "Density",
+     lwd = 2, col = "black")
+
+IncDist_mice(mice_imp_unbal_mcar_50, "coral")
+IncDist_mice(mice_imp_unbal_mcar_30, "salmon")
+IncDist_mice(mice_imp_unbal_mcar_10, "lavender")
+
+IncDist_mice(mice_imp_unbal_mar_50, "gray")
+IncDist_mice(mice_imp_unbal_mar_30, "gold")
+IncDist_mice(mice_imp_unbal_mar_10, "orchid")
+
+IncDist_mice(mice_imp_unbal_mnar_50, "navy")
+IncDist_mice(mice_imp_unbal_mnar_30, "darkgreen")
+IncDist_mice(mice_imp_unbal_mnar_10, "steelblue")
+
+legend("topright", 
+       legend = c("Initial Data", 
+                  "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10", 
+                  "unbal_mar_50", "unbal_mar_30", "unbal_mar_10", 
+                  "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
+       col = c("black", "coral", "salmon", "lavender", 
+               "gray", "gold", "orchid", "navy", "darkgreen", "steelblue"),
+       lwd = 2)
+
+##### mitml #####
+
+# Data Extraction
+mitmlData <- function(data){
+  mitmlImp <- data[[1]]
+  return(mitmlImp)
+}
+
+mitml_imp_bal_mcar_50 <- mitmlData(mitml_bal_mcar_50)
+mitml_imp_bal_mcar_30 <- mitmlData(mitml_bal_mcar_30)
+mitml_imp_bal_mcar_10 <- mitmlData(mitml_bal_mcar_10)
 
 
+mitml_imp_bal_mar_50 <- mitmlData(mitml_bal_mar_50)
+mitml_imp_bal_mar_30 <- mitmlData(mitml_bal_mar_30)
+mitml_imp_bal_mar_10 <- mitmlData(mitml_bal_mar_10)
 
 
+mitml_imp_bal_mnar_50 <- mitmlData(mitml_bal_mnar_50)
+mitml_imp_bal_mnar_30 <- mitmlData(mitml_bal_mnar_30)
+mitml_imp_bal_mnar_10 <- mitmlData(mitml_bal_mnar_10)
+
+mitml_imp_unbal_mcar_50 <- mitmlData(mitml_unbal_mcar_50)
+mitml_imp_unbal_mcar_30 <- mitmlData(mitml_unbal_mcar_30)
+mitml_imp_unbal_mcar_10 <- mitmlData(mitml_unbal_mcar_10)
+
+mitml_imp_unbal_mar_50 <- mitmlData(mitml_unbal_mar_50)
+mitml_imp_unbal_mar_30 <- mitmlData(mitml_unbal_mar_30)
+mitml_imp_unbal_mar_10 <- mitmlData(mitml_unbal_mar_10)
+
+mitml_imp_unbal_mnar_50 <- mitmlData(mitml_unbal_mnar_50)
+mitml_imp_unbal_mnar_30 <- mitmlData(mitml_unbal_mnar_30)
+mitml_imp_unbal_mnar_10 <- mitmlData(mitml_unbal_mnar_10)
+
+### Plot Distribution
+IncDist_mitml <- function(data, col) {
+  DataTemp_mitml <- density(data$Income, na.rm = TRUE)
+  lines(DataTemp_mitml, col = col, lwd = 2)
+}
+
+DataTemp_mitml <- density(balanced_panel_data$Income, na.rm = TRUE)
+plot(DataTemp_mitml, 
+     main = "Income Distributions from mitml - Balanced panel", 
+     xlab = "Income", 
+     ylab = "Density",
+     lwd = 2, col = "black")
+
+# Balanced Data
+IncDist_mitml(mitml_imp_bal_mcar_50, "blue")
+IncDist_mitml(mitml_imp_bal_mcar_30, "red")
+IncDist_mitml(mitml_imp_bal_mcar_10, "pink")
+
+IncDist_mitml(mitml_imp_bal_mar_50, "skyblue")
+IncDist_mitml(mitml_imp_bal_mar_30, "violet")
+IncDist_mitml(mitml_imp_bal_mar_10, "yellow")
+
+IncDist_mitml(mitml_imp_bal_mnar_50, "orange")
+IncDist_mitml(mitml_imp_bal_mnar_30, "green")
+IncDist_mitml(mitml_imp_bal_mnar_10, "brown")
+
+legend("topright", 
+       legend = c("Initial Data", 
+                  "bal_mcar_50", "bal_mcar_30", "bal_mcar_10", 
+                  "bal_mar_50", "bal_mar_30", "bal_mar_10", 
+                  "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
+       col = c("black", "blue", "red", "pink", "skyblue", "violet", "yellow", 
+               "orange", "green", "brown"),
+       lwd = 2)
+
+### Unbalanced data
+
+DataTemp_mitml <- density(unbalanced_panel_data$Income, na.rm = TRUE)
+plot(DataTemp_mitml, 
+     main = "Income Distributions from mitml - Unbalanced Panel", 
+     xlab = "Income", 
+     ylab = "Density",
+     lwd = 2, col = "black")
+
+IncDist_mitml(mitml_imp_unbal_mcar_50, "coral")
+IncDist_mitml(mitml_imp_unbal_mcar_30, "salmon")
+IncDist_mitml(mitml_imp_unbal_mcar_10, "lavender")
+
+IncDist_mitml(mitml_imp_unbal_mar_50, "gray")
+IncDist_mitml(mitml_imp_unbal_mar_30, "gold")
+IncDist_mitml(mitml_imp_unbal_mar_10, "orchid")
+
+IncDist_mitml(mitml_imp_unbal_mnar_50, "navy")
+IncDist_mitml(mitml_imp_unbal_mnar_30, "darkgreen")
+IncDist_mitml(mitml_imp_unbal_mnar_10, "steelblue")
+
+legend("topright", 
+       legend = c("Initial Data", 
+                  "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10", 
+                  "unbal_mar_50", "unbal_mar_30", "unbal_mar_10", 
+                  "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
+       col = c("black", "coral", "salmon", "lavender", 
+               "gray", "gold", "orchid", "navy", "darkgreen", "steelblue"),
+       lwd = 2)
+
+### amelia
+
+# Data Extraction
+ameliaData <- function(data){
+  ameliaImp <- data$imputations[[1]]
+  return(ameliaImp)
+}
+
+amelia_imp_bal_mcar_50 <- ameliaData(amelia_bal_mcar_50)
+amelia_imp_bal_mcar_30 <- ameliaData(amelia_bal_mcar_30)
+amelia_imp_bal_mcar_10 <- ameliaData(amelia_bal_mcar_10)
+
+amelia_imp_bal_mar_50 <- ameliaData(amelia_bal_mar_50)
+amelia_imp_bal_mar_30 <- ameliaData(amelia_bal_mar_30)
+amelia_imp_bal_mar_10 <- ameliaData(amelia_bal_mar_10)
+
+amelia_imp_bal_mnar_50 <- ameliaData(amelia_bal_mnar_50)
+amelia_imp_bal_mnar_30 <- ameliaData(amelia_bal_mnar_30)
+amelia_imp_bal_mnar_10 <- ameliaData(amelia_bal_mnar_10)
+
+amelia_imp_unbal_mcar_50 <- ameliaData(amelia_unbal_mcar_50)
+amelia_imp_unbal_mcar_30 <- ameliaData(amelia_unbal_mcar_30)
+amelia_imp_unbal_mcar_10 <- ameliaData(amelia_unbal_mcar_10)
+
+amelia_imp_unbal_mar_50 <- ameliaData(amelia_unbal_mar_50)
+amelia_imp_unbal_mar_30 <- ameliaData(amelia_unbal_mar_30)
+amelia_imp_unbal_mar_10 <- ameliaData(amelia_unbal_mar_10)
+
+amelia_imp_unbal_mnar_50 <- ameliaData(amelia_unbal_mnar_50)
+amelia_imp_unbal_mnar_30 <- ameliaData(amelia_unbal_mnar_30)
+amelia_imp_unbal_mnar_10 <- ameliaData(amelia_unbal_mnar_10)
+
+# Plot Distribution
+IncDist_amelia <- function(data, col) {
+  DataTemp_amelia <- density(data$Income, na.rm = TRUE)
+  lines(DataTemp_amelia, col = col, lwd = 2)
+}
+
+# Balanced Panel
+DataTemp_amelia <- density(balanced_panel_data$Income, na.rm = TRUE)
+plot(DataTemp_amelia, 
+     main = "Income Distributions from Amelia - Balanced Panel", 
+     xlab = "Income", 
+     ylab = "Density",
+     lwd = 2, col = "black")
+
+IncDist_amelia(amelia_imp_bal_mcar_50, "blue")
+IncDist_amelia(amelia_imp_bal_mcar_30, "red")
+IncDist_amelia(amelia_imp_bal_mcar_10, "pink")
+
+IncDist_amelia(amelia_imp_bal_mar_50, "skyblue")
+IncDist_amelia(amelia_imp_bal_mar_30, "violet")
+IncDist_amelia(amelia_imp_bal_mar_10, "yellow")
+
+IncDist_amelia(amelia_imp_bal_mnar_50, "orange")
+IncDist_amelia(amelia_imp_bal_mnar_30, "green")
+IncDist_amelia(amelia_imp_bal_mnar_10, "brown")
+
+legend("topright", 
+       legend = c("Initial Data", 
+                  "bal_mcar_50", "bal_mcar_30", "bal_mcar_10", 
+                  "bal_mar_50", "bal_mar_30", "bal_mar_10", 
+                  "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
+       col = c("black", "blue", "red", "pink", "skyblue", "violet", "yellow", 
+               "orange", "green", "brown"),
+       lwd = 2)
+
+# Unbalanced Panel
+DataTemp_amelia <- density(unbalanced_panel_data$Income, na.rm = TRUE)
+plot(DataTemp_amelia, 
+     main = "Income Distributions from Amelia - Unbalanced Panel", 
+     xlab = "Income", 
+     ylab = "Density",
+     lwd = 2, col = "black")
+
+IncDist_amelia(amelia_imp_unbal_mcar_50, "coral")
+IncDist_amelia(amelia_imp_unbal_mcar_30, "salmon")
+IncDist_amelia(amelia_imp_unbal_mcar_10, "lavender")
+
+IncDist_amelia(amelia_imp_unbal_mar_50, "gray")
+IncDist_amelia(amelia_imp_unbal_mar_30, "gold")
+IncDist_amelia(amelia_imp_unbal_mar_10, "orchid")
+
+IncDist_amelia(amelia_imp_unbal_mnar_50, "navy")
+IncDist_amelia(amelia_imp_unbal_mnar_30, "darkgreen")
+IncDist_amelia(amelia_imp_unbal_mnar_10, "steelblue")
 
 
+legend("topright", 
+       legend = c("Initial Data", 
+                  "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10", 
+                  "unbal_mar_50", "unbal_mar_30", "unbal_mar_10", 
+                  "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
+       col = c("black", "coral", "salmon", "lavender", 
+               "gray", "gold", "orchid", "navy", "darkgreen", "steelblue"),
+       lwd = 2)
+
+### LSTM-Network
+
+# Plot Distribution
+IncDist_LSTM <- function(data, col) {
+  DataTemp_LSTM <- density(data$Income, na.rm = TRUE)
+  lines(DataTemp_LSTM, col = col, lwd = 2)
+}
+
+# Balanced Panel
+DataTemp_LSTM <- density(balanced_panel_data$Income, na.rm = TRUE)
+plot(DataTemp_LSTM, 
+     main = "Income Distributions from LSTM - Balanced Panel", 
+     xlab = "Income", 
+     ylab = "Density",
+     lwd = 2, col = "black")
+
+IncDist_LSTM(lstm_bal_mcar_50, "blue")
+IncDist_LSTM(lstm_bal_mcar_30, "red")
+IncDist_LSTM(lstm_bal_mcar_10, "pink")
+
+IncDist_LSTM(lstm_bal_mar_50, "skyblue")
+IncDist_LSTM(lstm_bal_mar_30, "violet")
+IncDist_LSTM(lstm_bal_mar_10, "yellow")
+
+IncDist_LSTM(lstm_bal_mnar_50, "orange")
+IncDist_LSTM(lstm_bal_mnar_30, "green")
+IncDist_LSTM(lstm_bal_mnar_10, "brown")
+
+legend("topright", 
+       legend = c("Initial Data", 
+                  "bal_mcar_50", "bal_mcar_30", "bal_mcar_10", 
+                  "bal_mar_50", "bal_mar_30", "bal_mar_10", 
+                  "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
+       col = c("black", "blue", "red", "pink", "skyblue", "violet", "yellow", 
+               "orange", "green", "brown"),
+       lwd = 2)
+
+# Unbalanced Panel
+DataTemp_LSTM <- density(unbalanced_panel_data$Income, na.rm = TRUE)
+plot(DataTemp_LSTM, 
+     main = "Income Distributions from LSTM - Unbalanced Panel", 
+     xlab = "Income", 
+     ylab = "Density",
+     lwd = 2, col = "black")
+
+IncDist_LSTM(lstm_unbal_mcar_50, "coral")
+IncDist_LSTM(lstm_unbal_mcar_30, "salmon")
+IncDist_LSTM(lstm_unbal_mcar_10, "lavender")
+
+IncDist_LSTM(lstm_unbal_mar_50, "gray")
+IncDist_LSTM(lstm_unbal_mar_30, "gold")
+IncDist_LSTM(lstm_unbal_mar_10, "orchid")
+
+IncDist_LSTM(lstm_unbal_mnar_50, "navy")
+IncDist_LSTM(lstm_unbal_mnar_30, "darkgreen")
+IncDist_LSTM(lstm_unbal_mnar_10, "steelblue")
 
 
-
-
-
-
-
+legend("topright", 
+       legend = c("Initial Data", 
+                  "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10", 
+                  "unbal_mar_50", "unbal_mar_30", "unbal_mar_10", 
+                  "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
+       col = c("black", "coral", "salmon", "lavender", 
+               "gray", "gold", "orchid", "navy", "darkgreen", "steelblue"),
+       lwd = 2)
