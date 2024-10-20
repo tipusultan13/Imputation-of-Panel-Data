@@ -1120,51 +1120,61 @@ library(plm)
 packageVersion("keras")
 
 
-# Function to impute the datasets
 Data_Imputation_LSTM <- function(data) {
   
-  # Temporarily remove the rows with the missing values
-  DataTemp <- data %>%
-    filter(!is.na(Income))
+  # Remove the rows of the cells that include missing values
+  MissingRows <- which(is.na(data$Income))
+  CompleteData <- data[!is.na(data$Income), ]
   
-  # Convert 'Education' to numeric to make it more compatible with the model and including other numeric columns
-  DataEncoded <- DataTemp %>%
-    mutate(Education = as.factor(Education)) %>%
-    select(Age, Income, Education)
+  # Normalize Age and Income columns to train the LSTM model
+  AgeM <- mean(CompleteData$Age, na.rm = TRUE)
+  AgeSD <- sd(CompleteData$Age, na.rm = TRUE)
   
-  DataEncoded <- as.data.frame(model.matrix(~ Education - 1, data = DataEncoded))
+  IncomeM <- mean(CompleteData$Income, na.rm = TRUE)
+  IncomeSD <- sd(CompleteData$Income, na.rm = TRUE)
   
-  InputData <- cbind(Age = DataTemp$Age, Income = DataTemp$Income, DataEncoded)
+  CompleteData$Age <- (CompleteData$Age - AgeM) / AgeSD
+  CompleteData$Income <- (CompleteData$Income - IncomeM) / IncomeSD
   
-  CompleteCase <- InputData[!is.na(InputData$Income), ]
+  # Convert categorical columns to numeric encoding
+  CompleteData <- CompleteData %>%
+    mutate(Year = as.numeric(factor(Year)),
+           Education = as.numeric(factor(Education)))
   
-  TrainArray <- array(as.matrix(CompleteCase), dim = c(nrow(CompleteCase), 1, ncol(CompleteCase)))   # Because 3D array is more suitable for LSTM
+  # Prepare data to train the model, excluding ID
+  TrainX <- as.matrix(CompleteData %>% select(Year, Education, Age))
+  TrainY <- CompleteData$Income
   
-  # define and compile the LSTM model
+  # Reshape the data into 3D to make LSTM calculation easier (samples, timesteps=1, features=3)
+  TrainX <- array(TrainX, dim = c(nrow(TrainX), 1, ncol(TrainX)))
+  
+  # Build the model
   model <- keras_model_sequential() %>%
-    layer_lstm(units = 50, input_shape = c(1, ncol(CompleteCase)), return_sequences = FALSE) %>%
+    layer_lstm(units = 50, input_shape = c(1, 3), return_sequences = FALSE) %>%
     layer_dense(units = 1)
-
+  
   model %>% compile(
-    loss = "mean_squared_error",
+    loss = 'mean_squared_error',
     optimizer = optimizer_adam()
   )
   
   # Train the model
-  model %>% fit(
-    x = TrainArray,
-    y = CompleteCase$Income,  # Target is the Income column
-    epochs = 50,
-    batch_size = 32
-  )
+  model %>% fit(TrainX, TrainY, epochs = 50, batch_size = 32, verbose = 1)
   
-  # Predict and replacing the missing values
-  MissingCase <- InputData[is.na(data$Income), ]
-  if (nrow(MissingCase) > 0) {
-    MissingArray <- array(as.matrix(MissingCase), dim = c(nrow(MissingCase), 1, ncol(MissingCase)))
-    PredictedValue <- model %>% predict(MissingArray)
-        data$Income[is.na(data$Income)] <- PredictedValue
-  }
+  # Refill the missing values
+  MissingValues <- data[MissingRows, ]
+  
+  MissingValues <- MissingValues %>%
+    mutate(Year = as.numeric(factor(Year)),
+           Education = as.numeric(factor(Education)),
+           Age = (Age - AgeM) / AgeSD)  # Normalize Age for missing data
+  
+  XMissing <- as.matrix(MissingValues %>% select(Year, Education, Age))
+  XMissing <- array(XMissing, dim = c(nrow(XMissing), 1, ncol(XMissing)))
+  
+  PredictedIncome <- model %>% predict(XMissing) # Predict the missing values
+  PredictedIncome <- PredictedIncome * IncomeSD + IncomeM # De-normalize the predicted income
+  data$Income[MissingRows] <- PredictedIncome # Fill the missing values
   
   return(data)
 }
@@ -1257,7 +1267,7 @@ analyze_lstm_unbal_mnar_10 <- Analyze_LSTM(unbalanced_panel_data_mnar_10)
 EndTime_LSTM <- Sys.time()  # Ending time
 
 ExecutionTime_LSTM <- EndTime_LSTM - StartTime_LSTM
-print(ExecutionTime_LSTM) # Time difference of 20.0069 mins
+print(ExecutionTime_LSTM) # Time difference of 12.52068 mins
 
 #############################
 # Distribution Comparasion ##
