@@ -1308,7 +1308,7 @@ plot(DataTemp_mice,
      ylab = "Density",
      lwd = 2, col = "black")
 
-###balanced data
+### Balanced data
 
 IncDist_mice(mice_imp_bal_mcar_50, "blue")
 IncDist_mice(mice_imp_bal_mcar_30, "red")
@@ -1331,7 +1331,7 @@ legend("topright",
                "orange", "green", "brown"),
        lwd = 2)
 
-###Unbalanced data
+### Unbalanced data
 
 DataTemp_mice <- density(unbalanced_panel_data$Income, na.rm = TRUE)
 plot(DataTemp_mice, 

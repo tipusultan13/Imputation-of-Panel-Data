@@ -1,128 +1,72 @@
-library(keras)
-library(dplyr)
-library(plm)
-packageVersion("keras")
-
-
-# Function to impute the datasets
-Data_Imputation_LSTM <- function(data) {
+fill_missing_income_lstm <- function(data) {
   
-  # Temporarily replace the missing values with mean
-  DataTemp <- data %>%
-    mutate(Income = ifelse(is.na(Income), mean(Income, na.rm = TRUE), Income))
+  # Step 1: Remove rows with missing 'Income' and save the removed rows
+  missing_rows <- which(is.na(data$Income))
+  complete_data <- data[!is.na(data$Income), ]
   
-  # Convert 'Education' to numeric to make it more compatible with the model and including other numeric columns
-  DataEncoded <- DataTemp %>%
-    mutate(Education = as.factor(Education)) %>%
-    select(Age, Income, Education)
+  # Normalize numeric features (Age and Income) for the LSTM model
+  age_mean <- mean(complete_data$Age, na.rm = TRUE)
+  age_sd <- sd(complete_data$Age, na.rm = TRUE)
   
-  DataEncoded <- as.data.frame(model.matrix(~ Education - 1, data = DataEncoded))
+  income_mean <- mean(complete_data$Income, na.rm = TRUE)
+  income_sd <- sd(complete_data$Income, na.rm = TRUE)
   
-  InputData <- cbind(Age = DataTemp$Age, Income = DataTemp$Income, DataEncoded)
+  complete_data$Age <- (complete_data$Age - age_mean) / age_sd
+  complete_data$Income <- (complete_data$Income - income_mean) / income_sd
   
-  CompleteCase <- InputData[!is.na(InputData$Income), ]
+  # Step 2: Prepare data for LSTM training
+  # Convert categorical columns to one-hot encoding (ID, Year, Education)
+  complete_data <- complete_data %>%
+    mutate(ID = as.numeric(factor(ID)),
+           Year = as.numeric(factor(Year)),
+           Education = as.numeric(factor(Education)))
   
-  TrainArray <- array(as.matrix(CompleteCase), dim = c(nrow(CompleteCase), 1, ncol(CompleteCase)))   # Because 3D array is more suitable for LSTM
+  # Prepare training input (excluding the target column 'Income')
+  X_train <- as.matrix(complete_data %>% select(ID, Year, Education, Age))
+  y_train <- complete_data$Income
   
-  # define and compile the LSTM model
+  # Reshape the data to 3D for LSTM: [samples, timesteps=1, features=4]
+  X_train <- array(X_train, dim = c(nrow(X_train), 1, ncol(X_train)))
+  
+  # Step 3: Build and train the LSTM model with `return_sequences=TRUE`
   model <- keras_model_sequential() %>%
-    layer_lstm(units = 50, input_shape = c(1, ncol(CompleteCase)), return_sequences = FALSE) %>%
+    layer_lstm(units = 50, input_shape = c(1, 4), return_sequences = FALSE) %>%
     layer_dense(units = 1)
   
   model %>% compile(
-    loss = "mean_squared_error",
+    loss = 'mean_squared_error',
     optimizer = optimizer_adam()
   )
   
   # Train the model
-  model %>% fit(
-    x = TrainArray,
-    y = CompleteCase$Income,  # Target is the Income column
-    epochs = 50,
-    batch_size = 32
-  )
+  model %>% fit(X_train, y_train, epochs = 50, batch_size = 32, verbose = 1)
   
-  # Predict and replacing the missing values
-  MissingCase <- InputData[is.na(data$Income), ]
-  if (nrow(MissingCase) > 0) {
-    MissingArray <- array(as.matrix(MissingCase), dim = c(nrow(MissingCase), 1, ncol(MissingCase)))
-    PredictedValue <- model %>% predict(MissingArray)
-    data$Income[is.na(data$Income)] <- PredictedValue
-  }
+  # Step 4: Predict the missing values
+  # Prepare the data for the missing rows
+  data_missing <- data[missing_rows, ]
   
+  data_missing <- data_missing %>%
+    mutate(ID = as.numeric(factor(ID)),
+           Year = as.numeric(factor(Year)),
+           Education = as.numeric(factor(Education)),
+           Age = (Age - age_mean) / age_sd)  # Normalize Age for missing data
+  
+  X_missing <- as.matrix(data_missing %>% select(ID, Year, Education, Age))
+  X_missing <- array(X_missing, dim = c(nrow(X_missing), 1, ncol(X_missing)))
+  
+  # Predict the missing values
+  predicted_income <- model %>% predict(X_missing)
+  
+  # De-normalize the predicted income
+  predicted_income <- predicted_income * income_sd + income_mean
+  
+  # Fill the missing values with the predicted income
+  data$Income[missing_rows] <- predicted_income
+  
+  # Return the complete dataset
   return(data)
 }
-
-# Apply the function to the dataset
-lstm_bal_mcar_50 <- Data_Imputation_LSTM(balanced_panel_data_mcar_50)
-lstm_bal_mcar_30 <- Data_Imputation_LSTM(balanced_panel_data_mcar_30)
-lstm_bal_mcar_10 <- Data_Imputation_LSTM(balanced_panel_data_mcar_10)
-
-lstm_bal_mar_50 <- Data_Imputation_LSTM(balanced_panel_data_mar_50)
-lstm_bal_mar_30 <- Data_Imputation_LSTM(balanced_panel_data_mar_30)
-lstm_bal_mar_10 <- Data_Imputation_LSTM(balanced_panel_data_mar_10)
-
-lstm_bal_mnar_50 <- Data_Imputation_LSTM(balanced_panel_data_mnar_50)
-lstm_bal_mnar_30 <- Data_Imputation_LSTM(balanced_panel_data_mnar_30)
-lstm_bal_mnar_10 <- Data_Imputation_LSTM(balanced_panel_data_mnar_10)
-
-lstm_unbal_mcar_50 <- Data_Imputation_LSTM(unbalanced_panel_data_mcar_50)
-lstm_unbal_mcar_30 <- Data_Imputation_LSTM(unbalanced_panel_data_mcar_30)
-lstm_unbal_mcar_10 <- Data_Imputation_LSTM(unbalanced_panel_data_mcar_10)
-
-lstm_unbal_mar_50 <- Data_Imputation_LSTM(unbalanced_panel_data_mar_50)
-lstm_unbal_mar_30 <- Data_Imputation_LSTM(unbalanced_panel_data_mar_30)
-lstm_unbal_mar_10 <- Data_Imputation_LSTM(unbalanced_panel_data_mar_10)
-
-lstm_unbal_mnar_50 <- Data_Imputation_LSTM(unbalanced_panel_data_mnar_50)
-lstm_unbal_mnar_30 <- Data_Imputation_LSTM(unbalanced_panel_data_mnar_30)
-lstm_unbal_mnar_10 <- Data_Imputation_LSTM(unbalanced_panel_data_mnar_10)
+lstm_bal_mcar_50 <- fill_missing_income_lstm(balanced_panel_data_mcar_50)
+summary(lstm_bal_mcar_50)
 
 
-StartTime_LSTM <- Sys.time()  # Starting time
-
-# Function to generate coefficients and intercepts
-# Function to perform analysis on imputed data
-Analyze_Amelia <- function(data) {
-  
-  # Step 1: Imputation and extraction of data
-  amelia_fit <- Data_Imputation_Amelia(data)
-  imputed_list <- amelia_fit$imputations
-  
-  # Step 2: Perform Breusch-Pagan test to check for a panel effect
-  breusch_pagan_results <- lapply(imputed_list, function(x) {
-    pdata <- pdata.frame(x, index = c("ID", "Year"))
-    bp_test <- plmtest(plm(Income ~ Year + Education + Age, data = pdata, model = "pooling"), type = "bp")
-    return(bp_test$p.value)
-  })
-  
-  # Step 3: Based on Breusch-Pagan test, perform the appropriate regression
-  model_list <- lapply(1:length(imputed_list), function(i) {
-    pdata <- pdata.frame(imputed_list[[i]], index = c("ID", "Year"))
-    if (breusch_pagan_results[[i]] > 0.05) {
-      # Pooled OLS for no panel effect
-      return(plm(Income ~ Year + Education + Age, data = pdata, model = "pooling"))
-    } else {
-      # Hausman test if panel effect exists
-      random_model <- plm(Income ~ Year + Education + Age, data = pdata, model = "random")
-      fixed_model <- plm(Income ~ Year + Education + Age, data = pdata, model = "within")
-      
-      hausman_test <- phtest(fixed_model, random_model) # Hausman test
-      
-      if (hausman_test$p.value <= 0.05) {
-        print("Fixed Effects")
-        return(fixed_model) # Fixed Effect model if correlation exists
-      } else {
-        print("Random Effects")
-        return(random_model) # Random Effect model if correlation does not exists
-      }
-    }
-  })
-  
-  # Step 4: Pool and return the coefficients
-  pooled_results <- testEstimates(model_list)
-  return(pooled_results)
-}
-
-# Apply the function to each dataset and store results
-analyze_lstm_bal_mcar_50 <- Analyze_LSTM(balanced_panel_data_mcar_50)
