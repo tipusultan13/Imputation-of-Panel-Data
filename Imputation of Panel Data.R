@@ -12,7 +12,6 @@ setwd("/Users/tipusultan/Documents/GitHub/Imputation-of-Panel-Data")
 library(dplyr)
 library(readxl)
 library(ggplot2)
-library(ggplot2)
 library(gridExtra)
 
 # Load and clean the data
@@ -97,30 +96,30 @@ data$Year <- as.numeric(data$Year) # Convert Year column to make the calculation
 
 # Find IDs that are present in all years between 2013 and 2023
 years <- 2013:2023
-common_ids <- Reduce(intersect, lapply(years, function(year) {
+CommonIDS <- Reduce(intersect, lapply(years, function(year) {
   unique(data$ID[data$Year == year])
 }))
 
-panel_data <- data[data$ID %in% common_ids, ] # Filter the data to keep only rows with common IDs
+PanelData <- data[data$ID %in% CommonIDS, ] # Filter the data to keep only rows with common IDs
 
 # Count the occurrence of each ID
-id_counts <- panel_data %>%
+IDCounts <- PanelData %>%
   count(ID)
 
 # Extract IDs with exactly 11 occurrences
-ids_with_11_occurrences <- id_counts %>%
+ids_with_11_occurrences <- IDCounts %>%
   filter(n == 11) %>%
   pull(ID)
 
 # Filter the original dataset to include only rows with these IDs
-balanced_panel_data <- panel_data %>%
+balanced_panel_data <- PanelData %>%
   filter(ID %in% ids_with_11_occurrences)
 
 # Count the number of unique years each ID appears in
-id_year_count <- aggregate(Year ~ ID, data = balanced_panel_data, 
+IDYearCounts <- aggregate(Year ~ ID, data = balanced_panel_data, 
                            FUN = function(x) length(unique(x)))
 
-is_balanced_panel <- all(id_year_count$Year == length(2013:2023)) # Check if every ID appears in all the years (2013 to 2023)
+is_balanced_panel <- all(IDYearCounts$Year == length(2013:2023)) # Check if every ID appears in all the years (2013 to 2023)
 
 if (is_balanced_panel) {
   print("Balanced Panel Data")
@@ -129,23 +128,23 @@ if (is_balanced_panel) {
 }
 
 # Print the IDs that do not appear in all years (optional task)
-unbalanced_ids <- id_year_count$ID[id_year_count$Year != length(2013:2023)]
-if (length(unbalanced_ids) > 0) {
+UnbalancedIDS <- IDYearCounts$ID[IDYearCounts$Year != length(2013:2023)]
+if (length(UnbalancedIDS) > 0) {
   print("IDs that are not present in all years:")
-  print(unbalanced_ids)
+  print(UnbalancedIDS)
 }
 
 # Count the occurrence of each ID
-id_counts <- balanced_panel_data %>%
+IDCounts <- balanced_panel_data %>%
   count(ID)
 
 # Filter IDs that appear more than 11 times
-more_than_11 <- id_counts %>%
+more_than_11 <- IDCounts %>%
   filter(n > 11)
 num_more_than_11 <- nrow(more_than_11)
 
 # Filter IDs that appear less than 11 times
-less_than_11 <- id_counts %>%
+less_than_11 <- IDCounts %>%
   filter(n < 11)
 num_less_than_11 <- nrow(less_than_11)
 
@@ -159,32 +158,29 @@ summary(balanced_panel_data)
 ## Unalanced Panel
 ########################
 
-library(dplyr)
-
-sampled_data <- data.frame()
-
+SampleData <- data.frame()
 
 # Loop through each year to ensure 3455 unique ID-Year combinations
 for (yr in unique(data$Year)) {
   # Filter the data for the current year
-  year_data <- data %>% filter(Year == yr)
+  YearData <- data %>% filter(Year == yr)
   
   # Sample 3455 unique ID-Year combinations for this year
-  temp_sample <- year_data %>%
+  SampleTemp <- YearData %>%
     distinct(ID, Year, .keep_all = TRUE) %>%
     slice_sample(n = 3455)
   
   # Append the sampled data to the main data frame
-  sampled_data <- bind_rows(sampled_data, temp_sample)
+  SampleData <- bind_rows(SampleData, SampleTemp)
 }
 
-unbalanced_panel_data <- sampled_data
+unbalanced_panel_data <- SampleData
 
 # Count the number of unique years each ID appears in
-id_year_count <- aggregate(Year ~ ID, data = unbalanced_panel_data, 
+IDYearCounts <- aggregate(Year ~ ID, data = unbalanced_panel_data, 
                            FUN = function(x) length(unique(x)))
 
-is_balanced_panel <- all(id_year_count$Year == length(2013:2023)) # Check if every ID appears in all the years (2013 to 2023)
+is_balanced_panel <- all(IDYearCounts$Year == length(2013:2023)) # Check if every ID appears in all the years (2013 to 2023)
 
 
 if (is_balanced_panel) {
@@ -194,10 +190,10 @@ if (is_balanced_panel) {
 }
 
 # Print the IDs that do not appear in all years
-unbalanced_ids <- id_year_count$ID[id_year_count$Year != length(2013:2023)]
-if (length(unbalanced_ids) > 0) {
+UnbalancedIDS <- IDYearCounts$ID[IDYearCounts$Year != length(2013:2023)]
+if (length(UnbalancedIDS) > 0) {
   print("IDs that do not appear in all years:")
-  print(unbalanced_ids)
+  print(UnbalancedIDS)
 }
 
 print(unbalanced_panel_data[duplicated(unbalanced_panel_data), ]) # Check for duplicate rows in the data
