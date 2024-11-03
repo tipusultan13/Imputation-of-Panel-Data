@@ -12,7 +12,6 @@ setwd("/Users/tipusultan/Documents/GitHub/Imputation-of-Panel-Data")
 library(dplyr)
 library(readxl)
 library(ggplot2)
-library(ggplot2)
 library(gridExtra)
 
 # Load and clean the data
@@ -89,7 +88,7 @@ colnames(data)[colnames(data) == "LogIndividualIncome"] <- "Income"
 #colnames(data)[colnames(data) == "IndividualIncome"] <- "Income"
 summary(data)
 
-########################
+#########################
 ## Balanced Panel
 ########################
 
@@ -97,30 +96,30 @@ data$Year <- as.numeric(data$Year) # Convert Year column to make the calculation
 
 # Find IDs that are present in all years between 2013 and 2023
 years <- 2013:2023
-common_ids <- Reduce(intersect, lapply(years, function(year) {
+CommonIDS <- Reduce(intersect, lapply(years, function(year) {
   unique(data$ID[data$Year == year])
 }))
 
-panel_data <- data[data$ID %in% common_ids, ] # Filter the data to keep only rows with common IDs
+PanelData <- data[data$ID %in% CommonIDS, ] # Filter the data to keep only rows with common IDs
 
 # Count the occurrence of each ID
-id_counts <- panel_data %>%
+IDCounts <- PanelData %>%
   count(ID)
 
 # Extract IDs with exactly 11 occurrences
-ids_with_11_occurrences <- id_counts %>%
+ids_with_11_occurrences <- IDCounts %>%
   filter(n == 11) %>%
   pull(ID)
 
 # Filter the original dataset to include only rows with these IDs
-balanced_panel_data <- panel_data %>%
+balanced_panel_data <- PanelData %>%
   filter(ID %in% ids_with_11_occurrences)
 
 # Count the number of unique years each ID appears in
-id_year_count <- aggregate(Year ~ ID, data = balanced_panel_data, 
-                           FUN = function(x) length(unique(x)))
+IDYearCounts <- aggregate(Year ~ ID, data = balanced_panel_data, 
+                          FUN = function(x) length(unique(x)))
 
-is_balanced_panel <- all(id_year_count$Year == length(2013:2023)) # Check if every ID appears in all the years (2013 to 2023)
+is_balanced_panel <- all(IDYearCounts$Year == length(2013:2023)) # Check if every ID appears in all the years (2013 to 2023)
 
 if (is_balanced_panel) {
   print("Balanced Panel Data")
@@ -129,23 +128,23 @@ if (is_balanced_panel) {
 }
 
 # Print the IDs that do not appear in all years (optional task)
-unbalanced_ids <- id_year_count$ID[id_year_count$Year != length(2013:2023)]
-if (length(unbalanced_ids) > 0) {
+UnbalancedIDS <- IDYearCounts$ID[IDYearCounts$Year != length(2013:2023)]
+if (length(UnbalancedIDS) > 0) {
   print("IDs that are not present in all years:")
-  print(unbalanced_ids)
+  print(UnbalancedIDS)
 }
 
 # Count the occurrence of each ID
-id_counts <- balanced_panel_data %>%
+IDCounts <- balanced_panel_data %>%
   count(ID)
 
 # Filter IDs that appear more than 11 times
-more_than_11 <- id_counts %>%
+more_than_11 <- IDCounts %>%
   filter(n > 11)
 num_more_than_11 <- nrow(more_than_11)
 
 # Filter IDs that appear less than 11 times
-less_than_11 <- id_counts %>%
+less_than_11 <- IDCounts %>%
   filter(n < 11)
 num_less_than_11 <- nrow(less_than_11)
 
@@ -159,32 +158,29 @@ summary(balanced_panel_data)
 ## Unalanced Panel
 ########################
 
-library(dplyr)
-
-sampled_data <- data.frame()
-
+SampleData <- data.frame()
 
 # Loop through each year to ensure 3455 unique ID-Year combinations
 for (yr in unique(data$Year)) {
   # Filter the data for the current year
-  year_data <- data %>% filter(Year == yr)
+  YearData <- data %>% filter(Year == yr)
   
   # Sample 3455 unique ID-Year combinations for this year
-  temp_sample <- year_data %>%
+  SampleTemp <- YearData %>%
     distinct(ID, Year, .keep_all = TRUE) %>%
     slice_sample(n = 3455)
   
   # Append the sampled data to the main data frame
-  sampled_data <- bind_rows(sampled_data, temp_sample)
+  SampleData <- bind_rows(SampleData, SampleTemp)
 }
 
-unbalanced_panel_data <- sampled_data
+unbalanced_panel_data <- SampleData
 
 # Count the number of unique years each ID appears in
-id_year_count <- aggregate(Year ~ ID, data = unbalanced_panel_data, 
-                           FUN = function(x) length(unique(x)))
+IDYearCounts <- aggregate(Year ~ ID, data = unbalanced_panel_data, 
+                          FUN = function(x) length(unique(x)))
 
-is_balanced_panel <- all(id_year_count$Year == length(2013:2023)) # Check if every ID appears in all the years (2013 to 2023)
+is_balanced_panel <- all(IDYearCounts$Year == length(2013:2023)) # Check if every ID appears in all the years (2013 to 2023)
 
 
 if (is_balanced_panel) {
@@ -194,10 +190,10 @@ if (is_balanced_panel) {
 }
 
 # Print the IDs that do not appear in all years
-unbalanced_ids <- id_year_count$ID[id_year_count$Year != length(2013:2023)]
-if (length(unbalanced_ids) > 0) {
+UnbalancedIDS <- IDYearCounts$ID[IDYearCounts$Year != length(2013:2023)]
+if (length(UnbalancedIDS) > 0) {
   print("IDs that do not appear in all years:")
-  print(unbalanced_ids)
+  print(UnbalancedIDS)
 }
 
 print(unbalanced_panel_data[duplicated(unbalanced_panel_data), ]) # Check for duplicate rows in the data
@@ -706,9 +702,9 @@ packageVersion("mice")
 StartTime_mice <- Sys.time()  # Starting time
 
 Data_Imputation_mice <- function(data, m = 3, maxit = 20, method = 'pmm') {
-  data_temp <- data[c("Year", "Education", "Age", "Income")]
-  mice_imp <- mice(data_temp, method = method, m = m, maxit = maxit) # Perform MICE imputation
-  return(mice_imp)
+  DataTemp <- data[c("Year", "Education", "Age", "Income")]
+  miceImp <- mice(DataTemp, method = method, m = m, maxit = maxit) # Perform MICE imputation
+  return(miceImp)
 }
 
 # Apply imputation
@@ -735,6 +731,10 @@ mice_unbal_mar_10 <- Data_Imputation_mice(unbalanced_panel_data_mar_10)
 mice_unbal_mnar_50 <- Data_Imputation_mice(unbalanced_panel_data_mnar_50)
 mice_unbal_mnar_30 <- Data_Imputation_mice(unbalanced_panel_data_mnar_30)
 mice_unbal_mnar_10 <- Data_Imputation_mice(unbalanced_panel_data_mnar_10)
+
+EndTime_mice <- Sys.time()  # Ending time
+ExecutionTime_mice <- EndTime_mice - StartTime_mice
+print(ExecutionTime_mice) # Time difference of 1.245968 mins
 
 Analyze_mice <- function(mice_imp) {
   model <- with(mice_imp, lm(Income ~ Year + Education + Age))   # Fit the linear model
@@ -767,51 +767,45 @@ analyze_mice_unbal_mnar_50 <- Analyze_mice(mice_unbal_mnar_50)
 analyze_mice_unbal_mnar_30 <- Analyze_mice(mice_unbal_mnar_30)
 analyze_mice_unbal_mnar_10 <- Analyze_mice(mice_unbal_mnar_10)
 
-EndTime_mice <- Sys.time()  # Ending time
-
-ExecutionTime_mice <- EndTime_mice - StartTime_mice
-print(ExecutionTime_mice) # Time difference of 1.432353 mins
-
 ######################
 ## mitml package
 ######################
 
 library(mitml)
-library(dplyr)
 library(plm)
 library(lmtest)
 packageVersion("mitml")
 
+## Imputation ##
+
 ## Balanced Panel##
-###################
+
+StartTime_mitml <- Sys.time()  # Starting time
 
 pdata_bal <- pdata.frame(balanced_panel_data, index = c("ID", "Year")) # Convert the data frame to a panel data frame
 
 # Estimate the models
-fe_model <- plm(Income ~ Year + Education + Age, data = pdata_bal, model = "within")
-re_model <- plm(Income ~ Year + Education + Age, data = pdata_bal, model = "random")
+FE_Model <- plm(Income ~ Year + Education + Age, data = pdata_bal, model = "within")
+RE_Model <- plm(Income ~ Year + Education + Age, data = pdata_bal, model = "random")
 
-hausman_test <- phtest(fe_model, re_model) # Perform the Hausman test to compare the fixed and random effects models
-print(hausman_test)
+HausmanTest <- phtest(FE_Model, RE_Model) # Perform the Hausman test to compare the fixed and random effects models
+print(HausmanTest)
 # p-value is 0.2185, which is > 0.05. S0 the null hypothesis cannot be rejected.
 # This implies that the random effects in Education and Age is more appropriate.
-
-StartTime_mitml <- Sys.time()  # Starting time
 
 # Function to impute data
 Data_Imputation_mitml_Bal <- function(panel_data) {
   
-  selected_data <- panel_data[c("ID", "Year", "Education", "Age", "Income")]
+  SelectedData <- panel_data[c("ID", "Year", "Education", "Age", "Income")]
   
   # Define the type vector and assign column names
   type <- c(0, -2, 3, 3, 1)
-  names(type) <- colnames(selected_data)
+  names(type) <- colnames(SelectedData)
   
-  imputed_data <- panImpute(selected_data, type = type, n.burn = 1000, n.iter = 100, m = 3)   # Impute missing data
-  imputed_list <- mitmlComplete(imputed_data, print = "all")
-  return(imputed_list)
+  ImputedData <- panImpute(SelectedData, type = type, n.burn = 1000, n.iter = 100, m = 3)   # Impute missing data
+  ImputedList <- mitmlComplete(ImputedData, print = "all")
+  return(ImputedList)
 }
-
 
 # Apply the function to each dataset
 mitml_bal_mcar_50 <- Data_Imputation_mitml_Bal(balanced_panel_data_mcar_50)
@@ -826,7 +820,56 @@ mitml_bal_mnar_50 <- Data_Imputation_mitml_Bal(balanced_panel_data_mnar_50)
 mitml_bal_mnar_30 <- Data_Imputation_mitml_Bal(balanced_panel_data_mnar_30)
 mitml_bal_mnar_10 <- Data_Imputation_mitml_Bal(balanced_panel_data_mnar_10)
 
-# Function to extract coefficients
+## Unbalanced ##
+
+pdata_unbal <- pdata.frame(unbalanced_panel_data, index = c("ID", "Year")) # Convert the data frame to a panel data frame
+
+# Estimate the models
+FE_Model <- plm(Income ~ Year + Education + Age, data = pdata_unbal, model = "within")
+RE_Model <- plm(Income ~ Year + Education + Age, data = pdata_unbal, model = "random")
+
+HausmanTest <- phtest(FE_Model, RE_Model) # Perform the Hausman test to compare the fixed and random effects models
+print(HausmanTest)
+# p-value is 2.2e-16, which is < 0.05. So null hypothesis can be rejected.
+# implying that the fixed effects in Education and Age is more appropriate.
+
+# Function to impute data for unbalanced panels
+Data_Imputation_mitml_Unbal <- function(panel_data) {
+  # Prepare the data by ungrouping and selecting relevant columns
+  panel_data <- panel_data %>% 
+    ungroup()
+  
+  SelectedData <- as.data.frame(panel_data[c("ID", "Year", "Education", "Age", "Income")])
+  
+  # Define the type vector and assign column names
+  type <- c(0, -2, 2, 2, 1) 
+  names(type) <- colnames(SelectedData)
+  
+  ImputedData <- panImpute(SelectedData, type = type, n.burn = 1000, n.iter = 100, m = 3)   # Impute missing data
+  ImputedList <- mitmlComplete(ImputedData, print = "all")   # Extract imputed datasets
+  return(ImputedList)
+}
+
+# Apply the function to each dataset
+mitml_unbal_mcar_50 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mcar_50)
+mitml_unbal_mcar_30 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mcar_30)
+mitml_unbal_mcar_10 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mcar_10)
+
+mitml_unbal_mar_50 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mar_50)
+mitml_unbal_mar_30 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mar_30)
+mitml_unbal_mar_10 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mar_10)
+
+mitml_unbal_mnar_50 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mnar_50)
+mitml_unbal_mnar_30 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mnar_30)
+mitml_unbal_mnar_10 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mnar_10)
+
+EndTime_mitml <- Sys.time()  # Ending time
+ExecutionTime_mitml <- EndTime_mitml - StartTime_mitml
+print(ExecutionTime_mitml) # Time difference of 52.44876 secs
+
+## Finding Coefficients ##
+
+## Balanced ##
 Analyze_mitml_Bal <- function(imputed_list) {
   # Step 1: Impute dataset
   
@@ -880,48 +923,6 @@ analyze_mitml_bal_mnar_30 <- Analyze_mitml_Bal(mitml_bal_mnar_30)
 analyze_mitml_bal_mnar_10 <- Analyze_mitml_Bal(mitml_bal_mnar_10)
 
 ## Unbalanced Panel ##
-#####################
-
-pdata_unbal <- pdata.frame(unbalanced_panel_data, index = c("ID", "Year")) # Convert the data frame to a panel data frame
-
-# Estimate the models
-fe_model <- plm(Income ~ Year + Education + Age, data = pdata_unbal, model = "within")
-re_model <- plm(Income ~ Year + Education + Age, data = pdata_unbal, model = "random")
-
-hausman_test <- phtest(fe_model, re_model) # Perform the Hausman test to compare the fixed and random effects models
-print(hausman_test)
-# p-value is 2.2e-16, which is < 0.05. So null hypothesis can be rejected.
-# implying that the fixed effects in Education and Age is more appropriate.
-
-# Function to impute data for unbalanced panels
-Data_Imputation_mitml_Unbal <- function(panel_data) {
-  # Prepare the data by ungrouping and selecting relevant columns
-  panel_data <- panel_data %>% 
-    ungroup()
-  
-  selected_data <- as.data.frame(panel_data[c("ID", "Year", "Education", "Age", "Income")])
-  
-  # Define the type vector and assign column names
-  type <- c(0, -2, 2, 2, 1) 
-  names(type) <- colnames(selected_data)
-  
-  imputed_data <- panImpute(selected_data, type = type, n.burn = 1000, n.iter = 100, m = 3)   # Impute missing data
-  imputed_list <- mitmlComplete(imputed_data, print = "all")   # Extract imputed datasets
-  return(imputed_list)
-}
-
-# Apply the function to each dataset
-mitml_unbal_mcar_50 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mcar_50)
-mitml_unbal_mcar_30 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mcar_30)
-mitml_unbal_mcar_10 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mcar_10)
-
-mitml_unbal_mar_50 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mar_50)
-mitml_unbal_mar_30 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mar_30)
-mitml_unbal_mar_10 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mar_10)
-
-mitml_unbal_mnar_50 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mnar_50)
-mitml_unbal_mnar_30 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mnar_30)
-mitml_unbal_mnar_10 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mnar_10)
 
 # Function to analyze imputed data and extract coefficients for unbalanced panels
 Analyze_mitml_Unbal <- function(imputed_list) {
@@ -978,17 +979,14 @@ analyze_mitml_unbal_mnar_50 <- Analyze_mitml_Unbal(mitml_unbal_mnar_50)
 analyze_mitml_unbal_mnar_30 <- Analyze_mitml_Unbal(mitml_unbal_mnar_30)
 analyze_mitml_unbal_mnar_10 <- Analyze_mitml_Unbal(mitml_unbal_mnar_10)
 
-EndTime_mitml <- Sys.time()  # Ending time
-
-ExecutionTime_mitml <- EndTime_mitml - StartTime_mitml
-print(ExecutionTime_mitml) # Time difference of 1.419402 mins
-
 ############################
 ## Amelia package
 ############################
 
 library(Amelia)
 packageVersion("Amelia")
+
+StartTime_amelia <- Sys.time()  # Starting time
 
 # Function to impute data
 Data_Imputation_Amelia <- function(data) {
@@ -1000,14 +998,14 @@ Data_Imputation_Amelia <- function(data) {
   
   
   # Perform the imputation using Amelia
-  amelia_fit <- amelia(
+  ImputedData <- amelia(
     pdata,
     m = 3,
     ts = "Year",
     cs = "ID",
     noms = "Education"
   )
-  return(amelia_fit)
+  return(ImputedData)
 }
 
 # Apply the function to each dataset and store results
@@ -1035,8 +1033,9 @@ amelia_unbal_mnar_50 <- Data_Imputation_Amelia(unbalanced_panel_data_mnar_50)
 amelia_unbal_mnar_30 <- Data_Imputation_Amelia(unbalanced_panel_data_mnar_30)
 amelia_unbal_mnar_10 <- Data_Imputation_Amelia(unbalanced_panel_data_mnar_10)
 
-
-StartTime_amelia <- Sys.time()  # Starting time
+EndTime_amelia <- Sys.time()  # Ending time
+ExecutionTime_amelia <- EndTime_amelia - StartTime_amelia
+print(ExecutionTime_amelia) # Time difference of 51.04909 secs
 
 # Function to generate coefficients and intercepts
 Analyze_Amelia <- function(data) {
@@ -1105,11 +1104,6 @@ analyze_amelia_unbal_mnar_50 <- Analyze_Amelia(unbalanced_panel_data_mnar_50)
 analyze_amelia_unbal_mnar_30 <- Analyze_Amelia(unbalanced_panel_data_mnar_30)
 analyze_amelia_unbal_mnar_10 <- Analyze_Amelia(unbalanced_panel_data_mnar_10)
 
-EndTime_amelia <- Sys.time()  # Ending time
-
-ExecutionTime_amelia <- EndTime_amelia - StartTime_amelia
-print(ExecutionTime_amelia) # Time difference of 1.444227 mins
-
 ############################
 ## LSTM Network
 ############################
@@ -1119,6 +1113,7 @@ library(dplyr)
 library(plm)
 packageVersion("keras")
 
+StartTime_LSTM <- Sys.time()  # Starting time
 
 Data_Imputation_LSTM <- function(data) {
   
@@ -1204,8 +1199,9 @@ lstm_unbal_mnar_50 <- Data_Imputation_LSTM(unbalanced_panel_data_mnar_50)
 lstm_unbal_mnar_30 <- Data_Imputation_LSTM(unbalanced_panel_data_mnar_30)
 lstm_unbal_mnar_10 <- Data_Imputation_LSTM(unbalanced_panel_data_mnar_10)
 
-
-StartTime_LSTM <- Sys.time()  # Starting time
+EndTime_LSTM <- Sys.time()  # Ending time
+ExecutionTime_LSTM <- EndTime_LSTM - StartTime_LSTM
+print(ExecutionTime_LSTM) # Time difference of 11.66831 mins
 
 # Function to generate coefficients and intercepts
 Analyze_LSTM <- function(data) {
@@ -1264,13 +1260,8 @@ analyze_lstm_unbal_mnar_50 <- Analyze_LSTM(unbalanced_panel_data_mnar_50)
 analyze_lstm_unbal_mnar_30 <- Analyze_LSTM(unbalanced_panel_data_mnar_30)
 analyze_lstm_unbal_mnar_10 <- Analyze_LSTM(unbalanced_panel_data_mnar_10)
 
-EndTime_LSTM <- Sys.time()  # Ending time
-
-ExecutionTime_LSTM <- EndTime_LSTM - StartTime_LSTM
-print(ExecutionTime_LSTM) # Time difference of 12.52068 mins
-
 #############################
-# Distribution Comparasion ##
+# Distribution Comparason ##
 #############################
 
 ##### mice #####
@@ -1312,8 +1303,9 @@ IncDist_mice <- function(data, col){
 }
 
 DataTemp_mice <- density(balanced_panel_data$Income, na.rm = TRUE)
+par(mfrow = c(2, 3))
 plot(DataTemp_mice, 
-     main = "Income Distributions from mice - Balanced panel", 
+     main = "Income Distributions from mice - Balanced panel (MNAR)", 
      xlab = "Income", 
      ylab = "Density",
      lwd = 2, col = "black")
@@ -1323,29 +1315,35 @@ plot(DataTemp_mice,
 IncDist_mice(mice_imp_bal_mcar_50, "blue")
 IncDist_mice(mice_imp_bal_mcar_30, "red")
 IncDist_mice(mice_imp_bal_mcar_10, "pink")
+legend("topright", 
+       legend = c("Initial Data", "bal_mcar_50", "bal_mcar_30", "bal_mcar_10"),
+       col = c("black", "blue", "red", "pink"),
+       lwd = 2,
+       cex = 0.8)
 
 IncDist_mice(mice_imp_bal_mar_50, "skyblue")
 IncDist_mice(mice_imp_bal_mar_30, "violet")
 IncDist_mice(mice_imp_bal_mar_10, "yellow")
+legend("topright", 
+       legend = c("Initial Data", "bal_mar_50", "bal_mar_30", "bal_mar_10"),
+       col = c("black", "skyblue", "violet", "yellow"),
+       lwd = 2,
+       cex = 0.8)
 
 IncDist_mice(mice_imp_bal_mnar_50, "orange")
 IncDist_mice(mice_imp_bal_mnar_30, "green")
 IncDist_mice(mice_imp_bal_mnar_10, "brown")
-
 legend("topright", 
-       legend = c("Initial Data", 
-                  "bal_mcar_50", "bal_mcar_30", "bal_mcar_10", 
-                  "bal_mar_50", "bal_mar_30", "bal_mar_10", 
-                  "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
-       col = c("black", "blue", "red", "pink", "skyblue", "violet", "yellow", 
-               "orange", "green", "brown"),
-       lwd = 2)
+       legend = c("Initial Data", "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
+       col = c("black", "orange", "green", "brown"),
+       lwd = 2,
+       cex = 0.8)
 
 ### Unbalanced data
 
 DataTemp_mice <- density(unbalanced_panel_data$Income, na.rm = TRUE)
 plot(DataTemp_mice, 
-     main = "Income Distributions from mice - Unbalanced panel", 
+     main = "Income Distributions from mice - Unbalanced panel (MNAR)", 
      xlab = "Income", 
      ylab = "Density",
      lwd = 2, col = "black")
@@ -1353,23 +1351,29 @@ plot(DataTemp_mice,
 IncDist_mice(mice_imp_unbal_mcar_50, "coral")
 IncDist_mice(mice_imp_unbal_mcar_30, "salmon")
 IncDist_mice(mice_imp_unbal_mcar_10, "lavender")
+legend("topright", 
+       legend = c("Initial Data", "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10"),
+       col = c("black", "coral", "salmon", "lavender"),
+       lwd = 2,
+       cex = 0.8)
 
 IncDist_mice(mice_imp_unbal_mar_50, "gray")
 IncDist_mice(mice_imp_unbal_mar_30, "gold")
 IncDist_mice(mice_imp_unbal_mar_10, "orchid")
+legend("topright", 
+       legend = c("Initial Data","unbal_mar_50", "unbal_mar_30", "unbal_mar_10"),
+       col = c("black", "gray", "gold", "orchid"),
+       lwd = 2,
+       cex = 0.8)
 
 IncDist_mice(mice_imp_unbal_mnar_50, "navy")
 IncDist_mice(mice_imp_unbal_mnar_30, "darkgreen")
 IncDist_mice(mice_imp_unbal_mnar_10, "steelblue")
-
 legend("topright", 
-       legend = c("Initial Data", 
-                  "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10", 
-                  "unbal_mar_50", "unbal_mar_30", "unbal_mar_10", 
-                  "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
-       col = c("black", "coral", "salmon", "lavender", 
-               "gray", "gold", "orchid", "navy", "darkgreen", "steelblue"),
-       lwd = 2)
+       legend = c("Initial Data", "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
+       col = c("black", "navy", "darkgreen", "steelblue"),
+       lwd = 2,
+       cex = 0.8)
 
 ##### mitml #####
 
@@ -1413,7 +1417,7 @@ IncDist_mitml <- function(data, col) {
 
 DataTemp_mitml <- density(balanced_panel_data$Income, na.rm = TRUE)
 plot(DataTemp_mitml, 
-     main = "Income Distributions from mitml - Balanced panel", 
+     main = "Income Distributions from mitml - Balanced panel (MNAR)", 
      xlab = "Income", 
      ylab = "Density",
      lwd = 2, col = "black")
@@ -1422,29 +1426,35 @@ plot(DataTemp_mitml,
 IncDist_mitml(mitml_imp_bal_mcar_50, "blue")
 IncDist_mitml(mitml_imp_bal_mcar_30, "red")
 IncDist_mitml(mitml_imp_bal_mcar_10, "pink")
+legend("topright", 
+       legend = c("Initial Data", "bal_mcar_50", "bal_mcar_30", "bal_mcar_10"),
+       col = c("black", "blue", "red", "pink"),
+       lwd = 2,
+       cex = 0.8)
 
 IncDist_mitml(mitml_imp_bal_mar_50, "skyblue")
 IncDist_mitml(mitml_imp_bal_mar_30, "violet")
 IncDist_mitml(mitml_imp_bal_mar_10, "yellow")
+legend("topright", 
+       legend = c("Initial Data", "bal_mar_50", "bal_mar_30", "bal_mar_10"),
+       col = c("black","skyblue", "violet", "yellow"),
+       lwd = 2,
+       cex = 0.8)
 
 IncDist_mitml(mitml_imp_bal_mnar_50, "orange")
 IncDist_mitml(mitml_imp_bal_mnar_30, "green")
 IncDist_mitml(mitml_imp_bal_mnar_10, "brown")
-
 legend("topright", 
-       legend = c("Initial Data", 
-                  "bal_mcar_50", "bal_mcar_30", "bal_mcar_10", 
-                  "bal_mar_50", "bal_mar_30", "bal_mar_10", 
-                  "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
-       col = c("black", "blue", "red", "pink", "skyblue", "violet", "yellow", 
-               "orange", "green", "brown"),
-       lwd = 2)
+       legend = c("Initial Data", "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
+       col = c("black", "orange", "green", "brown"),
+       lwd = 2,
+       cex = 0.8)
 
 ### Unbalanced data
 
 DataTemp_mitml <- density(unbalanced_panel_data$Income, na.rm = TRUE)
 plot(DataTemp_mitml, 
-     main = "Income Distributions from mitml - Unbalanced Panel", 
+     main = "Income Distributions from mitml - Unbalanced Panel (MNAR)", 
      xlab = "Income", 
      ylab = "Density",
      lwd = 2, col = "black")
@@ -1452,23 +1462,29 @@ plot(DataTemp_mitml,
 IncDist_mitml(mitml_imp_unbal_mcar_50, "coral")
 IncDist_mitml(mitml_imp_unbal_mcar_30, "salmon")
 IncDist_mitml(mitml_imp_unbal_mcar_10, "lavender")
+legend("topright", 
+       legend = c("Initial Data", "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10"),
+       col = c("black", "coral", "salmon", "lavender"),
+       lwd = 2,
+       cex = 0.8)
 
 IncDist_mitml(mitml_imp_unbal_mar_50, "gray")
 IncDist_mitml(mitml_imp_unbal_mar_30, "gold")
 IncDist_mitml(mitml_imp_unbal_mar_10, "orchid")
+legend("topright", 
+       legend = c("Initial Data", "unbal_mar_50", "unbal_mar_30", "unbal_mar_10"),
+       col = c("black", "gray", "gold", "orchid"),
+       lwd = 2,
+       cex = 0.8)
 
 IncDist_mitml(mitml_imp_unbal_mnar_50, "navy")
 IncDist_mitml(mitml_imp_unbal_mnar_30, "darkgreen")
 IncDist_mitml(mitml_imp_unbal_mnar_10, "steelblue")
-
 legend("topright", 
-       legend = c("Initial Data", 
-                  "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10", 
-                  "unbal_mar_50", "unbal_mar_30", "unbal_mar_10", 
-                  "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
-       col = c("black", "coral", "salmon", "lavender", 
-               "gray", "gold", "orchid", "navy", "darkgreen", "steelblue"),
-       lwd = 2)
+       legend = c("Initial Data", "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
+       col = c("black", "navy", "darkgreen", "steelblue"),
+       lwd = 2,
+       cex = 0.8)
 
 ### amelia
 
@@ -1511,7 +1527,7 @@ IncDist_amelia <- function(data, col) {
 # Balanced Panel
 DataTemp_amelia <- density(balanced_panel_data$Income, na.rm = TRUE)
 plot(DataTemp_amelia, 
-     main = "Income Distributions from Amelia - Balanced Panel", 
+     main = "Income Distributions from Amelia - Balanced Panel (MNAR)", 
      xlab = "Income", 
      ylab = "Density",
      lwd = 2, col = "black")
@@ -1519,28 +1535,34 @@ plot(DataTemp_amelia,
 IncDist_amelia(amelia_imp_bal_mcar_50, "blue")
 IncDist_amelia(amelia_imp_bal_mcar_30, "red")
 IncDist_amelia(amelia_imp_bal_mcar_10, "pink")
+legend("topright", 
+       legend = c("Initial Data", "bal_mcar_50", "bal_mcar_30", "bal_mcar_10"),
+       col = c("black", "blue", "red", "pink"),
+       lwd = 2,
+       cex = 0.8)
 
 IncDist_amelia(amelia_imp_bal_mar_50, "skyblue")
 IncDist_amelia(amelia_imp_bal_mar_30, "violet")
 IncDist_amelia(amelia_imp_bal_mar_10, "yellow")
+legend("topright", 
+       legend = c("Initial Data","bal_mar_50", "bal_mar_30", "bal_mar_10"),
+       col = c("black", "skyblue", "violet", "yellow"),
+       lwd = 2,
+       cex = 0.8)
 
 IncDist_amelia(amelia_imp_bal_mnar_50, "orange")
 IncDist_amelia(amelia_imp_bal_mnar_30, "green")
 IncDist_amelia(amelia_imp_bal_mnar_10, "brown")
-
 legend("topright", 
-       legend = c("Initial Data", 
-                  "bal_mcar_50", "bal_mcar_30", "bal_mcar_10", 
-                  "bal_mar_50", "bal_mar_30", "bal_mar_10", 
-                  "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
-       col = c("black", "blue", "red", "pink", "skyblue", "violet", "yellow", 
-               "orange", "green", "brown"),
-       lwd = 2)
+       legend = c("Initial Data", "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
+       col = c("black", "orange", "green", "brown"),
+       lwd = 2,
+       cex = 0.8)
 
 # Unbalanced Panel
 DataTemp_amelia <- density(unbalanced_panel_data$Income, na.rm = TRUE)
 plot(DataTemp_amelia, 
-     main = "Income Distributions from Amelia - Unbalanced Panel", 
+     main = "Income Distributions from Amelia - Unbalanced Panel (MNAR)", 
      xlab = "Income", 
      ylab = "Density",
      lwd = 2, col = "black")
@@ -1548,24 +1570,29 @@ plot(DataTemp_amelia,
 IncDist_amelia(amelia_imp_unbal_mcar_50, "coral")
 IncDist_amelia(amelia_imp_unbal_mcar_30, "salmon")
 IncDist_amelia(amelia_imp_unbal_mcar_10, "lavender")
+legend("topright", 
+       legend = c("Initial Data", "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10"),
+       col = c("black", "coral", "salmon", "lavender"),
+       lwd = 2,
+       cex = 0.8)
 
 IncDist_amelia(amelia_imp_unbal_mar_50, "gray")
 IncDist_amelia(amelia_imp_unbal_mar_30, "gold")
 IncDist_amelia(amelia_imp_unbal_mar_10, "orchid")
+legend("topright", 
+       legend = c("Initial Data", "unbal_mar_50", "unbal_mar_30", "unbal_mar_10"),
+       col = c("black", "gray", "gold", "orchid"),
+       lwd = 2,
+       cex = 0.8)
 
 IncDist_amelia(amelia_imp_unbal_mnar_50, "navy")
 IncDist_amelia(amelia_imp_unbal_mnar_30, "darkgreen")
 IncDist_amelia(amelia_imp_unbal_mnar_10, "steelblue")
-
-
 legend("topright", 
-       legend = c("Initial Data", 
-                  "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10", 
-                  "unbal_mar_50", "unbal_mar_30", "unbal_mar_10", 
-                  "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
-       col = c("black", "coral", "salmon", "lavender", 
-               "gray", "gold", "orchid", "navy", "darkgreen", "steelblue"),
-       lwd = 2)
+       legend = c("Initial Data", "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
+       col = c("black", "navy", "darkgreen", "steelblue"),
+       lwd = 2,
+       cex = 0.8)
 
 ### LSTM-Network
 
@@ -1578,7 +1605,7 @@ IncDist_LSTM <- function(data, col) {
 # Balanced Panel
 DataTemp_LSTM <- density(balanced_panel_data$Income, na.rm = TRUE)
 plot(DataTemp_LSTM, 
-     main = "Income Distributions from LSTM - Balanced Panel", 
+     main = "Income Distributions from LSTM - Balanced Panel (MNAR)", 
      xlab = "Income", 
      ylab = "Density",
      lwd = 2, col = "black")
@@ -1586,28 +1613,34 @@ plot(DataTemp_LSTM,
 IncDist_LSTM(lstm_bal_mcar_50, "blue")
 IncDist_LSTM(lstm_bal_mcar_30, "red")
 IncDist_LSTM(lstm_bal_mcar_10, "pink")
+legend("topright", 
+       legend = c("Initial Data", "bal_mcar_50", "bal_mcar_30", "bal_mcar_10"),
+       col = c("black", "blue", "red", "pink"),
+       lwd = 2,
+       cex = 0.6)
 
 IncDist_LSTM(lstm_bal_mar_50, "skyblue")
 IncDist_LSTM(lstm_bal_mar_30, "violet")
 IncDist_LSTM(lstm_bal_mar_10, "yellow")
+legend("topright", 
+       legend = c("Initial Data", "bal_mar_50", "bal_mar_30", "bal_mar_10"),
+       col = c("black", "skyblue", "violet", "yellow"),
+       lwd = 2,
+       cex = 0.6)
 
 IncDist_LSTM(lstm_bal_mnar_50, "orange")
 IncDist_LSTM(lstm_bal_mnar_30, "green")
 IncDist_LSTM(lstm_bal_mnar_10, "brown")
-
 legend("topright", 
-       legend = c("Initial Data", 
-                  "bal_mcar_50", "bal_mcar_30", "bal_mcar_10", 
-                  "bal_mar_50", "bal_mar_30", "bal_mar_10", 
-                  "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
-       col = c("black", "blue", "red", "pink", "skyblue", "violet", "yellow", 
-               "orange", "green", "brown"),
-       lwd = 2)
+       legend = c("Initial Data", "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
+       col = c("black", "orange", "green", "brown"),
+       lwd = 2,
+       cex = 0.6)
 
 # Unbalanced Panel
 DataTemp_LSTM <- density(unbalanced_panel_data$Income, na.rm = TRUE)
 plot(DataTemp_LSTM, 
-     main = "Income Distributions from LSTM - Unbalanced Panel", 
+     main = "Income Distributions from LSTM - Unbalanced Panel (MNAR)", 
      xlab = "Income", 
      ylab = "Density",
      lwd = 2, col = "black")
@@ -1615,21 +1648,29 @@ plot(DataTemp_LSTM,
 IncDist_LSTM(lstm_unbal_mcar_50, "coral")
 IncDist_LSTM(lstm_unbal_mcar_30, "salmon")
 IncDist_LSTM(lstm_unbal_mcar_10, "lavender")
+legend("topright", 
+       legend = c("Initial Data", "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10"),
+       col = c("black", "coral", "salmon", "lavender"),
+       lwd = 2,
+       cex = 0.6)
 
 IncDist_LSTM(lstm_unbal_mar_50, "gray")
 IncDist_LSTM(lstm_unbal_mar_30, "gold")
 IncDist_LSTM(lstm_unbal_mar_10, "orchid")
+legend("topright", 
+       legend = c("Initial Data", "unbal_mar_50", "unbal_mar_30", "unbal_mar_10"),
+       col = c("black", "gray", "gold", "orchid"),
+       lwd = 2,
+       cex = 0.6)
 
 IncDist_LSTM(lstm_unbal_mnar_50, "navy")
 IncDist_LSTM(lstm_unbal_mnar_30, "darkgreen")
 IncDist_LSTM(lstm_unbal_mnar_10, "steelblue")
-
-
 legend("topright", 
-       legend = c("Initial Data", 
-                  "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10", 
-                  "unbal_mar_50", "unbal_mar_30", "unbal_mar_10", 
-                  "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
-       col = c("black", "coral", "salmon", "lavender", 
-               "gray", "gold", "orchid", "navy", "darkgreen", "steelblue"),
-       lwd = 2)
+       legend = c("Initial Data", "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
+       col = c("black", "navy", "darkgreen", "steelblue"),
+       lwd = 2,
+       cex = 0.6)
+
+par(mfrow = c(1, 1))
+
