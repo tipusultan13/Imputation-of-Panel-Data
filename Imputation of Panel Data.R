@@ -26,7 +26,7 @@ library(plm)
 # Load and clean the data
 RawData <- readRDS("population.RDS")
 RawData = data.frame(RawData)
-data = RawData[c("id", "year","EF310", "EF44", "inc.ind")]
+data = RawData[c("PID", "year","EF310", "EF44", "inc.ind")]
 colnames(data) <- c("ID", "Year", "Education", "Age", "IndividualIncome")
 summary(data)
 
@@ -61,7 +61,7 @@ summary(data$IndividualIncome)
 # Histogram for Individual Income
 IndividualIncomeHist <- ggplot(data, aes(x = IndividualIncome)) + 
   geom_histogram(binwidth = 1000) +
-  labs(title = "Individual Income", x = "Individual Income", y = "Frequency") +
+  labs(title = "Income", x = "Income", y = "Frequency") +
   theme_minimal()
 IndividualIncomeHist
 
@@ -70,21 +70,21 @@ data$LogIndividualIncome <- log(data$IndividualIncome + 1)
 
 IndividualIncomeLogHist <- ggplot(data, aes(x = LogIndividualIncome)) + 
   geom_histogram(binwidth = .10) +
-  labs(title = "Logged Individual Income", x = "Logged Individual Income", y = "Frequency")+
+  labs(title = "Logged Income", x = "Income", y = "Frequency")+
   theme_minimal()
 IndividualIncomeLogHist
 
 DataTempAge <- data[data$Age >= 18 & data$Age <= 67, ]
 AFilteredIncomeLogHist <- ggplot(DataTempAge, aes(x = LogIndividualIncome)) + 
   geom_histogram(binwidth = .10) +
-  labs(title = "Logged Individual Income (Age: 18-67)", x = "Logged Individual Income", y = "Frequency")+
+  labs(title = "Logged Income (Age: 18-67)", x = "Income", y = "Frequency")+
   theme_minimal()
 AFilteredIncomeLogHist
 
 DataTempIncome <- data[data$IndividualIncome != 0, ]
 IFilteredIncomeLogHist <- ggplot(DataTempIncome, aes(x = LogIndividualIncome)) + 
   geom_histogram(binwidth = .10) +
-  labs(title = "Logged Individual Income (Without 0 Income)", x = "Logged Individual Income", y = "Frequency")+
+  labs(title = "Logged Income (Without 0)", x = "Income", y = "Frequency")+
   theme_minimal()
 IFilteredIncomeLogHist
 
@@ -169,15 +169,15 @@ summary(balanced_panel_data)
 
 SampleData <- data.frame()
 
-# Loop through each year to ensure 3455 unique ID-Year combinations
+# Loop through each year to ensure 50483 unique ID-Year combinations
 for (yr in unique(data$Year)) {
   # Filter the data for the current year
   YearData <- data %>% filter(Year == yr)
   
-  # Sample 3455 unique ID-Year combinations for this year
+  # Sample 50483 unique ID-Year combinations for this year
   SampleTemp <- YearData %>%
     distinct(ID, Year, .keep_all = TRUE) %>%
-    slice_sample(n = 3455)
+    slice_sample(n = 50483)
   
   # Append the sampled data to the main data frame
   SampleData <- bind_rows(SampleData, SampleTemp)
@@ -317,7 +317,7 @@ mis_simulated_mar_30 <- 0.7 + 0.1 * balanced_panel_data_mar_30$Education +
 
 mis_simulated_mar_30 <- mis_simulated_mar_30 < quantile(mis_simulated_mar_30, p_mis_30) # All below the 50% quantile are set to missing
 mean(as.numeric(mis_simulated_mar_30))
-balanced_panel_data_mar_30$Income[mis_simulated_mar_30] <- NA # Set values to NA in IndividualIncome where missingness occurs
+balanced_panel_data_mar_30$Income[mis_simulated_mar_30] <- NA # Set values to NA in Income where missingness occurs
 summary(balanced_panel_data_mar_30)
 
 # Visualize the missing data pattern
@@ -563,7 +563,7 @@ unbalanced_panel_data_mar_10$Income[mis_simulated_mar_10] <- NA # Set values to 
 summary(unbalanced_panel_data_mar_10)
 
 # Visualize the missing data pattern
-aggr(unbalanced_panel_data_mar_30, 
+aggr(unbalanced_panel_data_mar_10, 
      col = c('navyblue', 'red'), 
      numbers = TRUE, 
      sortVars = TRUE, 
@@ -752,7 +752,7 @@ mice_unbal_mnar_10 <- Data_Imputation_mice(unbalanced_panel_data_mnar_10)
 
 EndTime_mice <- Sys.time()  # Ending time
 ExecutionTime_mice <- EndTime_mice - StartTime_mice
-print(ExecutionTime_mice) # Time difference of 1.326622 mins
+print(ExecutionTime_mice) # Time difference of 22.54844 mins
 
 ######################
 ## mitml package
@@ -774,8 +774,8 @@ RE_Model <- plm(Income ~ Year + Education + Age, data = pdata_bal, model = "rand
 
 HausmanTest <- phtest(FE_Model, RE_Model) # Perform the Hausman test to compare the fixed and random effects models
 print(HausmanTest)
-# p-value is 0.2185, which is > 0.05. S0 the null hypothesis cannot be rejected.
-# This implies that the random effects in Education and Age is more appropriate.
+# p-value is less than 2.2e-16, which is < 0.05. So null hypothesis can be rejected.
+# implying that the fixed effects in Education and Age is more appropriate.
 
 # Function to impute data
 Data_Imputation_mitml_Bal <- function(panel_data) {
@@ -783,7 +783,7 @@ Data_Imputation_mitml_Bal <- function(panel_data) {
   SelectedData <- panel_data[c("ID", "Year", "Education", "Age", "Income")]
   
   # Define the type vector and assign column names
-  type <- c(0, -2, 3, 3, 1)
+  type <- c(0, -2, 2, 2, 1)
   names(type) <- colnames(SelectedData)
   
   ImputedData <- panImpute(SelectedData, type = type, n.burn = 1000, n.iter = 100, m = 3)   # Impute missing data
@@ -814,7 +814,7 @@ RE_Model <- plm(Income ~ Year + Education + Age, data = pdata_unbal, model = "ra
 
 HausmanTest <- phtest(FE_Model, RE_Model) # Perform the Hausman test to compare the fixed and random effects models
 print(HausmanTest)
-# p-value is 2.2e-16, which is < 0.05. So null hypothesis can be rejected.
+# p-value is less than 2.2e-16, which is < 0.05. So null hypothesis can be rejected.
 # implying that the fixed effects in Education and Age is more appropriate.
 
 # Function to impute data for unbalanced panels
@@ -849,7 +849,7 @@ mitml_unbal_mnar_10 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mnar_10
 
 EndTime_mitml <- Sys.time()  # Ending time
 ExecutionTime_mitml <- EndTime_mitml - StartTime_mitml
-print(ExecutionTime_mitml) # Time difference of 52.44876 secs
+print(ExecutionTime_mitml) # Time difference of 11.92108 mins
 
 ############################
 ## Amelia package
@@ -906,7 +906,7 @@ amelia_unbal_mnar_10 <- Data_Imputation_Amelia(unbalanced_panel_data_mnar_10)
 
 EndTime_amelia <- Sys.time()  # Ending time
 ExecutionTime_amelia <- EndTime_amelia - StartTime_amelia
-print(ExecutionTime_amelia) # Time difference of 51.04909 secs
+print(ExecutionTime_amelia) # Time difference of 1.463465 hours
 
 ############################
 ## LSTM Network
@@ -1011,12 +1011,13 @@ print(ExecutionTime_LSTM) # Time difference of 11.66831 mins
 
 ##### mice #####
 
-miceData <- function(data){
-  miceImp <- data[[1]]
-  return(miceImp)
+miceData <- function(data) {
+  
+  CombinedData <- do.call(rbind, data)
+  return(CombinedData)
 }
 
-# Extract imputed dataset
+# Data Combination
 mice_imp_bal_mcar_50 <- miceData(mice_bal_mcar_50)
 mice_imp_bal_mcar_30 <- miceData(mice_bal_mcar_30)
 mice_imp_bal_mcar_10 <- miceData(mice_bal_mcar_10)
@@ -1122,10 +1123,10 @@ legend("topright",
 
 ##### mitml #####
 
-# Data Extraction
+# Data Combination
 mitmlData <- function(data){
-  mitmlImp <- data[[1]]
-  return(mitmlImp)
+  CombinedData <- do.call(rbind, data)
+  return(CombinedData)
 }
 
 mitml_imp_bal_mcar_50 <- mitmlData(mitml_bal_mcar_50)
@@ -1175,7 +1176,7 @@ legend("topright",
        legend = c("Initial Data", "bal_mcar_50", "bal_mcar_30", "bal_mcar_10"),
        col = c("black", "blue", "red", "pink"),
        lwd = 2,
-       cex = 0.8)
+       cex = 0.4)
 
 IncDist_mitml(mitml_imp_bal_mar_50, "skyblue")
 IncDist_mitml(mitml_imp_bal_mar_30, "violet")
@@ -1184,7 +1185,7 @@ legend("topright",
        legend = c("Initial Data", "bal_mar_50", "bal_mar_30", "bal_mar_10"),
        col = c("black","skyblue", "violet", "yellow"),
        lwd = 2,
-       cex = 0.8)
+       cex = 0.4)
 
 IncDist_mitml(mitml_imp_bal_mnar_50, "orange")
 IncDist_mitml(mitml_imp_bal_mnar_30, "green")
@@ -1193,7 +1194,7 @@ legend("topright",
        legend = c("Initial Data", "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
        col = c("black", "orange", "green", "brown"),
        lwd = 2,
-       cex = 0.8)
+       cex = 0..4)
 
 ### Unbalanced data
 
@@ -1211,7 +1212,7 @@ legend("topright",
        legend = c("Initial Data", "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10"),
        col = c("black", "coral", "salmon", "lavender"),
        lwd = 2,
-       cex = 0.8)
+       cex = 0.4)
 
 IncDist_mitml(mitml_imp_unbal_mar_50, "gray")
 IncDist_mitml(mitml_imp_unbal_mar_30, "gold")
@@ -1220,7 +1221,7 @@ legend("topright",
        legend = c("Initial Data", "unbal_mar_50", "unbal_mar_30", "unbal_mar_10"),
        col = c("black", "gray", "gold", "orchid"),
        lwd = 2,
-       cex = 0.8)
+       cex = 0.4)
 
 IncDist_mitml(mitml_imp_unbal_mnar_50, "navy")
 IncDist_mitml(mitml_imp_unbal_mnar_30, "darkgreen")
@@ -1229,14 +1230,15 @@ legend("topright",
        legend = c("Initial Data", "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
        col = c("black", "navy", "darkgreen", "steelblue"),
        lwd = 2,
-       cex = 0.8)
+       cex = 0.4)
 
 ### amelia
 
-# Data Extraction
+# Data Combination
 ameliaData <- function(data){
-  ameliaImp <- data$imputations[[1]]
-  return(ameliaImp)
+
+  CombinedData <- do.call(rbind, data$imputations)
+  return(CombinedData)
 }
 
 amelia_imp_bal_mcar_50 <- ameliaData(amelia_bal_mcar_50)
@@ -1284,7 +1286,7 @@ legend("topright",
        legend = c("Initial Data", "bal_mcar_50", "bal_mcar_30", "bal_mcar_10"),
        col = c("black", "blue", "red", "pink"),
        lwd = 2,
-       cex = 0.8)
+       cex = 0.4)
 
 IncDist_amelia(amelia_imp_bal_mar_50, "skyblue")
 IncDist_amelia(amelia_imp_bal_mar_30, "violet")
@@ -1293,7 +1295,7 @@ legend("topright",
        legend = c("Initial Data","bal_mar_50", "bal_mar_30", "bal_mar_10"),
        col = c("black", "skyblue", "violet", "yellow"),
        lwd = 2,
-       cex = 0.8)
+       cex = 0.4)
 
 IncDist_amelia(amelia_imp_bal_mnar_50, "orange")
 IncDist_amelia(amelia_imp_bal_mnar_30, "green")
@@ -1302,7 +1304,7 @@ legend("topright",
        legend = c("Initial Data", "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
        col = c("black", "orange", "green", "brown"),
        lwd = 2,
-       cex = 0.8)
+       cex = 0.4)
 
 # Unbalanced Panel
 DataTemp_amelia <- density(unbalanced_panel_data$Income, na.rm = TRUE)
@@ -1319,7 +1321,7 @@ legend("topright",
        legend = c("Initial Data", "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10"),
        col = c("black", "coral", "salmon", "lavender"),
        lwd = 2,
-       cex = 0.8)
+       cex = 0.4)
 
 IncDist_amelia(amelia_imp_unbal_mar_50, "gray")
 IncDist_amelia(amelia_imp_unbal_mar_30, "gold")
@@ -1328,7 +1330,7 @@ legend("topright",
        legend = c("Initial Data", "unbal_mar_50", "unbal_mar_30", "unbal_mar_10"),
        col = c("black", "gray", "gold", "orchid"),
        lwd = 2,
-       cex = 0.8)
+       cex = 0.4)
 
 IncDist_amelia(amelia_imp_unbal_mnar_50, "navy")
 IncDist_amelia(amelia_imp_unbal_mnar_30, "darkgreen")
@@ -1337,7 +1339,7 @@ legend("topright",
        legend = c("Initial Data", "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
        col = c("black", "navy", "darkgreen", "steelblue"),
        lwd = 2,
-       cex = 0.8)
+       cex = 0.4)
 
 ### LSTM-Network
 
@@ -1423,38 +1425,61 @@ par(mfrow = c(1, 1))
 ### Coefficients Comparison
 ##########################
 
-CoefficientsExtraction <- function(data) {
+pdata <- pdata.frame(balanced_panel_data, index = c("ID", "Year")) # Converting into the panel format
+pdata <- pdata[c("ID", "Year", "Education", "Age", "Income")]
+View(pdata)
+
+
+ModelSelection <- function(data) {
   
   pdata <- pdata.frame(data, index = c("ID", "Year")) # Converting into the panel format
+  pdata <- pdata[c("ID", "Year", "Education", "Age", "Income")]
+  
   
   # Breusch-Pagan test
   BPTest <- plmtest(plm(Income ~ Education + Age, data = pdata, model = "pooling"), type = "bp")
   
   if (BPTest$p.value > 0.05) {
-    model <- plm(Income ~ Year + Education + Age, data = pdata, model = "pooling") # Pooled OLS model for no panel effect
-    print("Model: Pooled OLS")
+    cat("P-Value:", BPTest$p.value, "\n")
+    cat("Model: Pooled OLS")
   } else {
     # Hausman test to check the type of panel effect
-    RandomEffectModel <- plm(Income ~ Year + Education + Age, data = pdata, model = "random")
-    FixedEffectModel <- plm(Income ~ Year + Education + Age, data = pdata, model = "within")
+    RandomEffectModel <- plm(Income ~ Education + Age, data = pdata, model = "random")
+    FixedEffectModel <- plm(Income ~ Education + Age, data = pdata, model = "within")
 
     HausmanTest <- phtest(FixedEffectModel, RandomEffectModel)
     
     if (HausmanTest$p.value <= 0.05) {
-      model <- FixedEffectModel # Fixed Effects model if correlation exists
-      print("Model: Fixed Effect")
+      cat("P-Value:", HausmanTest$p.value, "\n")
+      cat("Model: Fixed Effect")
     } else {
-      model <- RandomEffectModel # Random Effects model if correlation exists
-      print("Model: Random Effect")
+      cat("P-Value:", HausmanTest$p.value, "\n")
+      cat("Model: Random Effect")
     }
   }
+}
+
+ModelSelection(balanced_panel_data)
+ModelSelection(unbalanced_panel_data)
+
+CoefficientsExtraction <- function(data) {
+  pdata <- pdata.frame(data, index = c("ID", "Year")) # Converting into the panel format
+  pdata <- pdata[c("ID", "Year", "Education", "Age", "Income")]
+  
+  
+  #####
+  
+  
+  model <- plm(Income ~ Education + Age, data = pdata, model = "within")
+  
+  
+  ####
   
   
   Coefficients <- coef(model) # Coefficients extraction
   Coefficients <- as.data.frame(Coefficients)
   return(Coefficients)
 }
-
 balanced_panel_data_coef <- CoefficientsExtraction(balanced_panel_data)
 unbalanced_panel_data_coef <- CoefficientsExtraction(unbalanced_panel_data)
 
@@ -1467,7 +1492,7 @@ mice_Coff_bal <- function(mice_imp) {
   
   for (i in 1:length(mice_imp)) {
     pdata <- pdata.frame(mice_imp[[i]], index = c("ID", "Year")) # Convert to panel data format
-    RandomEffectModel <- plm(Income ~ Year + Education + Age, data = pdata, model = "random")
+    RandomEffectModel <- plm(Income ~ Education + Age, data = pdata, model = "within")
     CoList[[i]] <- coef(RandomEffectModel) # Extract coefficients
   }
   
@@ -1669,6 +1694,7 @@ Coeff_amelia_unbal_mnar_30 <- amelia_Coff_unbal(amelia_unbal_mnar_30)
 Coeff_amelia_unbal_mnar_10 <- amelia_Coff_unbal(amelia_unbal_mnar_10)
 
 ### LSTM ###
+
 LSTM_Coff_bal <- function(data) {
   
   pdata <- pdata.frame(data, index = c("ID", "Year"))
