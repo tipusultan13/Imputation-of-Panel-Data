@@ -27,7 +27,7 @@ library(plm)
 RawData <- readRDS("population.RDS")
 RawData = data.frame(RawData)
 data = RawData[c("PID", "year", "EF44", "erwerbstyp", "inc.ind", "EF49", "vollzeit")]
-colnames(data) <- c("ID", "Year", "Age", "EmploymentTypes", "IndividualIncome", "MaritalStatus", "EmploymentHours" )
+colnames(data) <- c("ID", "Year", "Age", "EmploymentTypes", "IndividualIncome", "MaritalStatus", "EmploymentHours") # Add sex, 
 summary(data)
 
 # 'ID'
@@ -715,7 +715,7 @@ unbalanced_panel_data_mnar_10 <- convert_DataTypes(unbalanced_panel_data_mnar_10
 ## mice package
 ######################
 
-packageVersion("mice")
+packageVersion("mice") # Try (Age)^2
 
 StartTime_mice <- Sys.time()  # Starting time
 
@@ -726,13 +726,23 @@ Data_Imputation_mice <- function(data, m = 3, maxit = 20, method = 'pmm') {
   data$Lagged_EmploymentHours <- lag(data$EmploymentHours, 1)
   
   ID <- data$ID
+  Year <- data$Year
+  EmploymentTypes <- data$EmploymentTypes
+  MaritalStatus <- data$MaritalStatus
+  EmploymentHours <- data$EmploymentHours
   DataTemp <- data[c("Lagged_MaritalStatus", "Lagged_EmploymentHours", "Age", "Income")]
   miceImp <- mice(DataTemp, method = method, m = m, maxit = maxit) # Perform MICE imputation
   
   # Readd the ID column
   CompleteDataset <- lapply(1:m, function(i) {
     CompleteData <- complete(miceImp, action = i)
-    CompleteData <- cbind(ID = ID, CompleteData)
+    CompleteData <- cbind(ID = ID,
+                          Year = Year,
+                          EmploymentTypes = EmploymentTypes,
+                          MaritalStatus = MaritalStatus,
+                          EmploymentHours = EmploymentHours,
+                          CompleteData)
+    CompleteData <- CompleteData[c("ID", "Year", "Age", "EmploymentTypes", "Income", "MaritalStatus", "EmploymentHours")]
     return(CompleteData)
   })
   
@@ -831,9 +841,6 @@ print(HausmanTest)
 
 # Function to impute data for unbalanced panels
 Data_Imputation_mitml_Unbal <- function(panel_data) {
-  # Prepare the data by ungrouping and selecting relevant columns
-  panel_data <- panel_data %>% 
-    ungroup()
   
   SelectedData <- panel_data[c("ID", "Year", "Age", "EmploymentTypes", "Income", "MaritalStatus", "EmploymentHours")]
   
@@ -1021,7 +1028,7 @@ ExecutionTime_LSTM <- EndTime_LSTM - StartTime_LSTM
 print(ExecutionTime_LSTM) # Time difference of 11.66831 mins
 
 #########################################
-## Statistical Analysis of the Data
+## Statistical Analysis
 #########################################
 
 
@@ -1090,7 +1097,7 @@ legend("topright",
        legend = c("Initial Data", "bal_mcar_50", "bal_mcar_30", "bal_mcar_10"),
        col = c("black", "blue", "red", "pink"),
        lwd = 2,
-       cex = 0.4)
+       cex = 0.8)
 
 IncDist_mice(mice_imp_bal_mar_50, "skyblue")
 IncDist_mice(mice_imp_bal_mar_30, "violet")
@@ -1099,7 +1106,7 @@ legend("topright",
        legend = c("Initial Data", "bal_mar_50", "bal_mar_30", "bal_mar_10"),
        col = c("black", "skyblue", "violet", "yellow"),
        lwd = 2,
-       cex = 0.4)
+       cex = 0.8)
 
 IncDist_mice(mice_imp_bal_mnar_50, "orange")
 IncDist_mice(mice_imp_bal_mnar_30, "green")
@@ -1108,7 +1115,7 @@ legend("topright",
        legend = c("Initial Data", "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
        col = c("black", "orange", "green", "brown"),
        lwd = 2,
-       cex = 0.4)
+       cex = 0.8)
 
 ### Unbalanced data
 
@@ -1126,7 +1133,7 @@ legend("topright",
        legend = c("Initial Data", "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10"),
        col = c("black", "coral", "salmon", "lavender"),
        lwd = 2,
-       cex = 0.4)
+       cex = 0.8)
 
 IncDist_mice(mice_imp_unbal_mar_50, "gray")
 IncDist_mice(mice_imp_unbal_mar_30, "gold")
@@ -1135,7 +1142,7 @@ legend("topright",
        legend = c("Initial Data","unbal_mar_50", "unbal_mar_30", "unbal_mar_10"),
        col = c("black", "gray", "gold", "orchid"),
        lwd = 2,
-       cex = 0.4)
+       cex = 0.8)
 
 IncDist_mice(mice_imp_unbal_mnar_50, "navy")
 IncDist_mice(mice_imp_unbal_mnar_30, "darkgreen")
@@ -1144,7 +1151,7 @@ legend("topright",
        legend = c("Initial Data", "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
        col = c("black", "navy", "darkgreen", "steelblue"),
        lwd = 2,
-       cex = 0.4)
+       cex = 0.8)
 
 ##### mitml #####
 
@@ -1201,7 +1208,7 @@ legend("topright",
        legend = c("Initial Data", "bal_mcar_50", "bal_mcar_30", "bal_mcar_10"),
        col = c("black", "blue", "red", "pink"),
        lwd = 2,
-       cex = 0.4)
+       cex = 0.8)
 
 IncDist_mitml(mitml_imp_bal_mar_50, "skyblue")
 IncDist_mitml(mitml_imp_bal_mar_30, "violet")
@@ -1210,7 +1217,7 @@ legend("topright",
        legend = c("Initial Data", "bal_mar_50", "bal_mar_30", "bal_mar_10"),
        col = c("black","skyblue", "violet", "yellow"),
        lwd = 2,
-       cex = 0.4)
+       cex = 0.8)
 
 IncDist_mitml(mitml_imp_bal_mnar_50, "orange")
 IncDist_mitml(mitml_imp_bal_mnar_30, "green")
@@ -1219,7 +1226,7 @@ legend("topright",
        legend = c("Initial Data", "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
        col = c("black", "orange", "green", "brown"),
        lwd = 2,
-       cex = 0..4)
+       cex = 0.8)
 
 ### Unbalanced data
 
@@ -1237,7 +1244,7 @@ legend("topright",
        legend = c("Initial Data", "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10"),
        col = c("black", "coral", "salmon", "lavender"),
        lwd = 2,
-       cex = 0.4)
+       cex = 0.8)
 
 IncDist_mitml(mitml_imp_unbal_mar_50, "gray")
 IncDist_mitml(mitml_imp_unbal_mar_30, "gold")
@@ -1246,7 +1253,7 @@ legend("topright",
        legend = c("Initial Data", "unbal_mar_50", "unbal_mar_30", "unbal_mar_10"),
        col = c("black", "gray", "gold", "orchid"),
        lwd = 2,
-       cex = 0.4)
+       cex = 0.8)
 
 IncDist_mitml(mitml_imp_unbal_mnar_50, "navy")
 IncDist_mitml(mitml_imp_unbal_mnar_30, "darkgreen")
@@ -1255,7 +1262,7 @@ legend("topright",
        legend = c("Initial Data", "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
        col = c("black", "navy", "darkgreen", "steelblue"),
        lwd = 2,
-       cex = 0.4)
+       cex = 0.8)
 
 ### amelia
 
@@ -1311,7 +1318,7 @@ legend("topright",
        legend = c("Initial Data", "bal_mcar_50", "bal_mcar_30", "bal_mcar_10"),
        col = c("black", "blue", "red", "pink"),
        lwd = 2,
-       cex = 0.4)
+       cex = 0.8)
 
 IncDist_amelia(amelia_imp_bal_mar_50, "skyblue")
 IncDist_amelia(amelia_imp_bal_mar_30, "violet")
@@ -1320,7 +1327,7 @@ legend("topright",
        legend = c("Initial Data","bal_mar_50", "bal_mar_30", "bal_mar_10"),
        col = c("black", "skyblue", "violet", "yellow"),
        lwd = 2,
-       cex = 0.4)
+       cex = 0.8)
 
 IncDist_amelia(amelia_imp_bal_mnar_50, "orange")
 IncDist_amelia(amelia_imp_bal_mnar_30, "green")
@@ -1329,7 +1336,7 @@ legend("topright",
        legend = c("Initial Data", "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
        col = c("black", "orange", "green", "brown"),
        lwd = 2,
-       cex = 0.4)
+       cex = 0.8)
 
 # Unbalanced Panel
 DataTemp_amelia <- density(unbalanced_panel_data$Income, na.rm = TRUE)
@@ -1346,7 +1353,7 @@ legend("topright",
        legend = c("Initial Data", "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10"),
        col = c("black", "coral", "salmon", "lavender"),
        lwd = 2,
-       cex = 0.4)
+       cex = 0.8)
 
 IncDist_amelia(amelia_imp_unbal_mar_50, "gray")
 IncDist_amelia(amelia_imp_unbal_mar_30, "gold")
@@ -1355,7 +1362,7 @@ legend("topright",
        legend = c("Initial Data", "unbal_mar_50", "unbal_mar_30", "unbal_mar_10"),
        col = c("black", "gray", "gold", "orchid"),
        lwd = 2,
-       cex = 0.4)
+       cex = 0.8)
 
 IncDist_amelia(amelia_imp_unbal_mnar_50, "navy")
 IncDist_amelia(amelia_imp_unbal_mnar_30, "darkgreen")
@@ -1364,7 +1371,7 @@ legend("topright",
        legend = c("Initial Data", "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
        col = c("black", "navy", "darkgreen", "steelblue"),
        lwd = 2,
-       cex = 0.4)
+       cex = 0.8)
 
 ### LSTM-Network
 
@@ -1389,7 +1396,7 @@ legend("topright",
        legend = c("Initial Data", "bal_mcar_50", "bal_mcar_30", "bal_mcar_10"),
        col = c("black", "blue", "red", "pink"),
        lwd = 2,
-       cex = 0.6)
+       cex = 0.8)
 
 IncDist_LSTM(lstm_bal_mar_50, "skyblue")
 IncDist_LSTM(lstm_bal_mar_30, "violet")
@@ -1398,7 +1405,7 @@ legend("topright",
        legend = c("Initial Data", "bal_mar_50", "bal_mar_30", "bal_mar_10"),
        col = c("black", "skyblue", "violet", "yellow"),
        lwd = 2,
-       cex = 0.6)
+       cex = 0.8)
 
 IncDist_LSTM(lstm_bal_mnar_50, "orange")
 IncDist_LSTM(lstm_bal_mnar_30, "green")
@@ -1407,7 +1414,7 @@ legend("topright",
        legend = c("Initial Data", "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
        col = c("black", "orange", "green", "brown"),
        lwd = 2,
-       cex = 0.6)
+       cex = 0.8)
 
 # Unbalanced Panel
 DataTemp_LSTM <- density(unbalanced_panel_data$Income, na.rm = TRUE)
@@ -1450,18 +1457,19 @@ par(mfrow = c(1, 1))
 ### Coefficients Comparison
 ##########################
 
+# Select the appropriate model
 ModelSelection <- function(data) {
   
   # Breusch-Pagan test
-  BPTest <- plmtest(plm(Income ~ Age + EmploymentType, data = data, model = "pooling"), type = "bp")
+  BPTest <- plmtest(plm(Income ~ Age + EmploymentTypes + MaritalStatus, data = data, model = "pooling"), type = "bp")
   
   if (BPTest$p.value > 0.05) {
     cat("P-Value:", BPTest$p.value, "\n")
     cat("Model: Pooled OLS")
   } else {
     # Hausman test to check the type of panel effect
-    RandomEffectModel <- plm(Income ~ Age + EmploymentType, data = data, model = "random")
-    FixedEffectModel <- plm(Income ~ Age + EmploymentType, data = data, model = "within")
+    RandomEffectModel <- plm(Income ~ Age + EmploymentTypes + MaritalStatus, data = data, model = "random")
+    FixedEffectModel <- plm(Income ~ Age + EmploymentTypes + MaritalStatus, data = data, model = "within") # Check this one
 
     HausmanTest <- phtest(FixedEffectModel, RandomEffectModel)
     
@@ -1478,17 +1486,20 @@ ModelSelection <- function(data) {
 ModelSelection(balanced_panel_data)
 ModelSelection(unbalanced_panel_data)
 
+# Extract the coefficients
 CoefficientsExtraction <- function(data) {
   
-  #####
+  # Fitting the model and extract coefficients
+  model <- plm(Income ~ Age + EmploymentHours + EmploymentTypes + MaritalStatus, data = data, model = "within")
+  Coefficients <- coef(model)
   
+  # Convert coefficients to a data frame
+  Coefficients <- data.frame(
+    Variable = names(Coefficients),
+    Coefficient = as.numeric(Coefficients),
+    row.names = NULL
+  )
   
-  model <- plm(Income ~ EmploymentType + Age + MaritalStatus + EmploymentHours, data = data, model = "within")
-  
-  
-  ####
-  Coefficients <- coef(model) # Coefficients extraction
-  Coefficients <- as.data.frame(Coefficients)
   return(Coefficients)
 }
 
@@ -1496,260 +1507,313 @@ balanced_panel_data_coef <- CoefficientsExtraction(balanced_panel_data)
 unbalanced_panel_data_coef <- CoefficientsExtraction(unbalanced_panel_data)
 
 ### mice ###
-
-# Balanced Panel
-mice_Coff_bal <- function(mice_imp) {
+mice_Coff <- function(mice_imp) {
   
-  CoList <- list() # Empty list to store the coefficients from individual dataset
+  CoList <- list() # Empty list to store the coefficients from individual datasets
   
   for (i in 1:length(mice_imp)) {
-    pdata <- pdata.frame(mice_imp[[i]], index = c("ID", "Year")) # Convert to panel data format
-    RandomEffectModel <- plm(Income ~ Education + Age, data = pdata, model = "within")
-    CoList[[i]] <- coef(RandomEffectModel) # Extract coefficients
+    pdata <- mice_imp[[i]]
+    
+    # Fitting the model and extracting coefficients
+    FixedEffectModel <- plm(Income ~ EmploymentTypes + Age + MaritalStatus + EmploymentHours, data = pdata, model = "within")
+    Coefficients <- coef(FixedEffectModel)
+
+    CoList[[i]] <- Coefficients
   }
   
-  # Apply Rubin's Rules to generate the pooled coefficients
-  CoefficientsList <- do.call(rbind, CoList)
-  PooledCoefficient <- colMeans(CoefficientsList)
-  CoDf <- data.frame(
-    Coefficient = PooledCoefficient
-  )
+  # Combine coefficients into a single data frame
+  CoefficientsDF <- do.call(rbind, lapply(CoList, function(x) {
+    data.frame(
+      Variable = names(x),
+      Coefficient = as.numeric(x),
+      stringsAsFactors = FALSE
+    )
+  }))
   
-  return(CoDf)
+  # Rubin's Rule: Calculate pooled coefficients
+  PooledCoefficient <- aggregate(CoefficientsDF$Coefficient, by = list(CoefficientsDF$Variable), FUN = mean)
+  colnames(PooledCoefficient) <- c("Variable", "Coefficients")
+  
+  return(PooledCoefficient)
 }
 
 # Apply analysis
-Coeff_mice_bal_mcar_50 <- mice_Coff_bal(mice_bal_mcar_50)
-Coeff_mice_bal_mcar_30 <- mice_Coff_bal(mice_bal_mcar_30)
-Coeff_mice_bal_mcar_10 <- mice_Coff_bal(mice_bal_mcar_10)
+Coeff_mice_bal_mcar_50 <- mice_Coff(mice_bal_mcar_50)
+Coeff_mice_bal_mcar_30 <- mice_Coff(mice_bal_mcar_30)
+Coeff_mice_bal_mcar_10 <- mice_Coff(mice_bal_mcar_10)
 
-Coeff_mice_bal_mar_50 <- mice_Coff_bal(mice_bal_mar_50)
-Coeff_mice_bal_mar_30 <- mice_Coff_bal(mice_bal_mar_30)
-Coeff_mice_bal_mar_10 <- mice_Coff_bal(mice_bal_mar_10)
+Coeff_mice_bal_mar_50 <- mice_Coff(mice_bal_mar_50)
+Coeff_mice_bal_mar_30 <- mice_Coff(mice_bal_mar_30)
+Coeff_mice_bal_mar_10 <- mice_Coff(mice_bal_mar_10)
 
-Coeff_mice_bal_mnar_50 <- mice_Coff_bal(mice_bal_mnar_50)
-Coeff_mice_bal_mnar_30 <- mice_Coff_bal(mice_bal_mnar_30)
-Coeff_mice_bal_mnar_10 <- mice_Coff_bal(mice_bal_mnar_10)
+Coeff_mice_bal_mnar_50 <- mice_Coff(mice_bal_mnar_50)
+Coeff_mice_bal_mnar_30 <- mice_Coff(mice_bal_mnar_30)
+Coeff_mice_bal_mnar_10 <- mice_Coff(mice_bal_mnar_10)
 
-# Unbalanced Panel
-mice_Coff_unbal <- function(mice_imp) {
-  
-  CoList <- list() # Empty list to store the coefficients from individual dataset
-  
-  for (i in 1:length(mice_imp)) {
-    pdata <- pdata.frame(mice_imp[[i]], index = c("ID", "Year")) # Convert to panel data format
-    FixedEffectModel <- plm(Income ~ Year + Education + Age, data = pdata, model = "within")
-    CoList[[i]] <- coef(FixedEffectModel) # Extract coefficients
-  }
-  
-  # Apply Rubin's Rules to generate the pooled coefficients
-  CoefficientsList <- do.call(rbind, CoList)
-  PooledCoefficient <- colMeans(CoefficientsList)
-  CoDf <- data.frame(
-    Coefficient = PooledCoefficient
-  )
-  
-  return(CoDf)
-}
+Coeff_mice_unbal_mcar_50 <- mice_Coff(mice_unbal_mcar_50)
+Coeff_mice_unbal_mcar_30 <- mice_Coff(mice_unbal_mcar_30)
+Coeff_mice_unbal_mcar_10 <- mice_Coff(mice_unbal_mcar_10)
 
-Coeff_mice_unbal_mcar_50 <- mice_Coff_unbal(mice_unbal_mcar_50)
-Coeff_mice_unbal_mcar_30 <- mice_Coff_unbal(mice_unbal_mcar_30)
-Coeff_mice_unbal_mcar_10 <- mice_Coff_unbal(mice_unbal_mcar_10)
+Coeff_mice_unbal_mar_50 <- mice_Coff(mice_unbal_mar_50)
+Coeff_mice_unbal_mar_30 <- mice_Coff(mice_unbal_mar_30)
+Coeff_mice_unbal_mar_10 <- mice_Coff(mice_unbal_mar_10)
 
-Coeff_mice_unbal_mar_50 <- mice_Coff_unbal(mice_unbal_mar_50)
-Coeff_mice_unbal_mar_30 <- mice_Coff_unbal(mice_unbal_mar_30)
-Coeff_mice_unbal_mar_10 <- mice_Coff_unbal(mice_unbal_mar_10)
-
-Coeff_mice_unbal_mnar_50 <- mice_Coff_unbal(mice_unbal_mnar_50)
-Coeff_mice_unbal_mnar_30 <- mice_Coff_unbal(mice_unbal_mnar_30)
-Coeff_mice_unbal_mnar_10 <- mice_Coff_unbal(mice_unbal_mnar_10)
+Coeff_mice_unbal_mnar_50 <- mice_Coff(mice_unbal_mnar_50)
+Coeff_mice_unbal_mnar_30 <- mice_Coff(mice_unbal_mnar_30)
+Coeff_mice_unbal_mnar_10 <- mice_Coff(mice_unbal_mnar_10)
 
 ### mitml ###
-
-## Balanced Panel
-mitml_Coff_bal <- function(mitml_imp) {
+mitml_Coff <- function(mitml_imp) {
   
-  CoList <- list() # Empty list to store the coefficients from individual dataset
+  CoList <- list() # Empty list to store the coefficients from individual datasets
   
   for (i in 1:length(mitml_imp)) {
-    pdata <- pdata.frame(mitml_imp[[i]], index = c("ID", "Year")) # Convert into panel data format
-    RandomEffectModel <- plm(Income ~ Year + Education + Age, data = pdata, model = "random")
-    CoList[[i]] <- coef(RandomEffectModel) # Extract coefficients
+    pdata <- mitml_imp[[i]]
+    
+    # Fit the model and extract coefficients
+    FixedEffectModel <- plm(Income ~ EmploymentTypes + Age + MaritalStatus + EmploymentHours, data = pdata, model = "within")
+    Coefficients <- coef(FixedEffectModel)
+    
+    # Store coefficients directly without averaging
+    CoList[[i]] <- Coefficients
   }
   
-  # Apply Rubin's Rules to generate the pooled coefficients
-  CoefficientsList <- do.call(rbind, CoList)
-  PooledCoefficient <- colMeans(CoefficientsList, na.rm = TRUE)
+  # Combine coefficients into a single data frame
+  CoefficientsDF <- do.call(rbind, lapply(CoList, function(x) {
+    data.frame(
+      Variable = names(x),
+      Coefficient = as.numeric(x),
+      stringsAsFactors = FALSE
+    )
+  }))
   
-  CoDf <- data.frame(
-    Coefficient = PooledCoefficient
-  )
+  # Rubin's Rule: Calculate pooled coefficients
+  PooledCoefficient <- aggregate(CoefficientsDF$Coefficient, by = list(CoefficientsDF$Variable), FUN = mean)
+  colnames(PooledCoefficient) <- c("Variable", "Coefficients")
   
-  return(CoDf)
+  return(PooledCoefficient)
 }
 
 # Apply the function to each dataset and store results
-Coeff_mitml_bal_mcar_50 <- mitml_Coff_bal(mitml_bal_mcar_50)
-Coeff_mitml_bal_mcar_30 <- mitml_Coff_bal(mitml_bal_mcar_30)
-Coeff_mitml_bal_mcar_10 <- mitml_Coff_bal(mitml_bal_mcar_10)
+Coeff_mitml_bal_mcar_50 <- mitml_Coff(mitml_bal_mcar_50)
+Coeff_mitml_bal_mcar_30 <- mitml_Coff(mitml_bal_mcar_30)
+Coeff_mitml_bal_mcar_10 <- mitml_Coff(mitml_bal_mcar_10)
 
-Coeff_mitml_bal_mar_50 <- mitml_Coff_bal(mitml_bal_mar_50)
-Coeff_mitml_bal_mar_30 <- mitml_Coff_bal(mitml_bal_mar_30)
-Coeff_mitml_bal_mar_10 <- mitml_Coff_bal(mitml_bal_mar_10)
+Coeff_mitml_bal_mar_50 <- mitml_Coff(mitml_bal_mar_50)
+Coeff_mitml_bal_mar_30 <- mitml_Coff(mitml_bal_mar_30)
+Coeff_mitml_bal_mar_10 <- mitml_Coff(mitml_bal_mar_10)
 
-Coeff_mitml_bal_mnar_50 <- mitml_Coff_bal(mitml_bal_mnar_50)
-Coeff_mitml_bal_mnar_30 <- mitml_Coff_bal(mitml_bal_mnar_30)
-Coeff_mitml_bal_mnar_10 <- mitml_Coff_bal(mitml_bal_mnar_10)
+Coeff_mitml_bal_mnar_50 <- mitml_Coff(mitml_bal_mnar_50)
+Coeff_mitml_bal_mnar_30 <- mitml_Coff(mitml_bal_mnar_30)
+Coeff_mitml_bal_mnar_10 <- mitml_Coff(mitml_bal_mnar_10)
 
-## Unbalanced Panel
-mitml_Coff_unbal <- function(mitml_imp) {
-  
-  CoList <- list() # Empty list to store the coefficients from individual dataset
-  
-  for (i in 1:length(mitml_imp)) {
-    pdata <- pdata.frame(mitml_imp[[i]], index = c("ID", "Year")) # Convert into panel data format
-    FixedEffectModel <- plm(Income ~ Year + Education + Age, data = pdata, model = "within")
-    CoList[[i]] <- coef(FixedEffectModel) # Extract coefficients
-  }
-  
-  # Apply Rubin's Rules to generate the pooled coefficients
-  CoefficientsList <- do.call(rbind, CoList)
-  PooledCoefficient <- colMeans(CoefficientsList, na.rm = TRUE)
-  
-  CoDf <- data.frame(
-    Coefficient = PooledCoefficient
-  )
-  
-  return(CoDf)
-}
+Coeff_mitml_unbal_mcar_50 <- mitml_Coff(mitml_unbal_mcar_50)
+Coeff_mitml_unbal_mcar_30 <- mitml_Coff(mitml_unbal_mcar_30)
+Coeff_mitml_unbal_mcar_10 <- mitml_Coff(mitml_unbal_mcar_10)
 
-# Apply the analysis function to each set of imputed datasets
-Coeff_mitml_unbal_mcar_50 <- mitml_Coff_unbal(mitml_unbal_mcar_50)
-Coeff_mitml_unbal_mcar_30 <- mitml_Coff_unbal(mitml_unbal_mcar_30)
-Coeff_mitml_unbal_mcar_10 <- mitml_Coff_unbal(mitml_unbal_mcar_10)
+Coeff_mitml_unbal_mar_50 <- mitml_Coff(mitml_unbal_mar_50)
+Coeff_mitml_unbal_mar_30 <- mitml_Coff(mitml_unbal_mar_30)
+Coeff_mitml_unbal_mar_10 <- mitml_Coff(mitml_unbal_mar_10)
 
-Coeff_mitml_unbal_mar_50 <- mitml_Coff_unbal(mitml_unbal_mar_50)
-Coeff_mitml_unbal_mar_30 <- mitml_Coff_unbal(mitml_unbal_mar_30)
-Coeff_mitml_unbal_mar_10 <- mitml_Coff_unbal(mitml_unbal_mar_10)
-
-Coeff_mitml_unbal_mnar_50 <- mitml_Coff_unbal(mitml_unbal_mnar_50)
-Coeff_mitml_unbal_mnar_30 <- mitml_Coff_unbal(mitml_unbal_mnar_30)
-Coeff_mitml_unbal_mnar_10 <- mitml_Coff_unbal(mitml_unbal_mnar_10)
+Coeff_mitml_unbal_mnar_50 <- mitml_Coff(mitml_unbal_mnar_50)
+Coeff_mitml_unbal_mnar_30 <- mitml_Coff(mitml_unbal_mnar_30)
+Coeff_mitml_unbal_mnar_10 <- mitml_Coff(mitml_unbal_mnar_10)
 
 ### amelia ###
-amelia_Coff_bal <- function(amelia_imp) {
+amelia_Coff <- function(amelia_imp) {
   
-  CoList <- list() # Empty list to store the coefficients from individual dataset
-  amelia_imp <- amelia_imp$imputations
+  CoList <- list() # Empty list to store the coefficients from individual datasets
+  
   for (i in 1:length(amelia_imp)) {
-    pdata <- pdata.frame(amelia_imp[[i]], index = c("ID", "Year")) # Convert into panel data format
-    RandomEffectModel <- plm(Income ~ Year + Education + Age, data = pdata, model = "random")
-    CoList[[i]] <- coef(RandomEffectModel) # Extract coefficients
+    pdata <- amelia_imp[[i]]
+    
+    # Fit the model and extract coefficients
+    FixedEffectModel <- plm(Income ~ EmploymentTypes + Age + MaritalStatus + EmploymentHours, data = pdata, model = "within")
+    Coefficients <- coef(FixedEffectModel)
+    
+    # Store coefficients directly without averaging
+    CoList[[i]] <- Coefficients
   }
   
-  # Apply Rubin's Rules to generate the pooled coefficients
-  CoefficientsList <- do.call(rbind, CoList)
-  PooledCoefficient <- colMeans(CoefficientsList, na.rm = TRUE)
+  # Combine coefficients into a single data frame
+  CoefficientsDF <- do.call(rbind, lapply(CoList, function(x) {
+    data.frame(
+      Variable = names(x),
+      Coefficient = as.numeric(x),
+      stringsAsFactors = FALSE
+    )
+  }))
   
-  CoDf <- data.frame(
-    Coefficient = PooledCoefficient
-  )
+  # Rubin's Rule: Calculate pooled coefficients
+  PooledCoefficient <- aggregate(CoefficientsDF$Coefficient, by = list(CoefficientsDF$Variable), FUN = mean)
+  colnames(PooledCoefficient) <- c("Variable", "PooledCoefficient")
   
-  return(CoDf)
+  return(PooledCoefficient)
 }
 
 # Apply the function to each dataset and store results
-Coeff_amelia_bal_mcar_50 <- amelia_Coff_bal(amelia_bal_mcar_50)
-Coeff_amelia_bal_mcar_30 <- amelia_Coff_bal(amelia_bal_mcar_30)
-Coeff_amelia_bal_mcar_10 <- amelia_Coff_bal(amelia_bal_mcar_10)
+Coeff_amelia_bal_mcar_50 <- amelia_Coff(amelia_bal_mcar_50)
+Coeff_amelia_bal_mcar_30 <- amelia_Coff(amelia_bal_mcar_30)
+Coeff_amelia_bal_mcar_10 <- amelia_Coff(amelia_bal_mcar_10)
 
-Coeff_amelia_bal_mar_50 <- amelia_Coff_bal(amelia_bal_mar_50)
-Coeff_amelia_bal_mar_30 <- amelia_Coff_bal(amelia_bal_mar_30)
-Coeff_amelia_bal_mar_10 <- amelia_Coff_bal(amelia_bal_mar_10)
+Coeff_amelia_bal_mar_50 <- amelia_Coff(amelia_bal_mar_50)
+Coeff_amelia_bal_mar_30 <- amelia_Coff(amelia_bal_mar_30)
+Coeff_amelia_bal_mar_10 <- amelia_Coff(amelia_bal_mar_10)
 
-Coeff_amelia_bal_mnar_50 <- amelia_Coff_bal(amelia_bal_mnar_50)
-Coeff_amelia_bal_mnar_30 <- amelia_Coff_bal(amelia_bal_mnar_30)
-Coeff_amelia_bal_mnar_10 <- amelia_Coff_bal(amelia_bal_mnar_10)
+Coeff_amelia_bal_mnar_50 <- amelia_Coff(amelia_bal_mnar_50)
+Coeff_amelia_bal_mnar_30 <- amelia_Coff(amelia_bal_mnar_30)
+Coeff_amelia_bal_mnar_10 <- amelia_Coff(amelia_bal_mnar_10)
 
-### Unbalanced Panel
-amelia_Coff_unbal <- function(amelia_imp) {
-  
-  CoList <- list() # Empty list to store the coefficients from individual dataset
-  amelia_imp <- amelia_imp$imputations
-  for (i in 1:length(amelia_imp)) {
-    pdata <- pdata.frame(amelia_imp[[i]], index = c("ID", "Year")) # Convert into panel data format
-    FixedEffectModel <- plm(Income ~ Year + Education + Age, data = pdata, model = "within")
-    CoList[[i]] <- coef(FixedEffectModel) # Extract coefficients
-  }
-  
-  # Apply Rubin's Rules to generate the pooled coefficients
-  CoefficientsList <- do.call(rbind, CoList)
-  PooledCoefficient <- colMeans(CoefficientsList, na.rm = TRUE)
-  
-  CoDf <- data.frame(
-    Coefficient = PooledCoefficient
-  )
-  
-  return(CoDf)
-}
+Coeff_amelia_unbal_mcar_50 <- amelia_Coff(amelia_unbal_mcar_50)
+Coeff_amelia_unbal_mcar_30 <- amelia_Coff(amelia_unbal_mcar_30)
+Coeff_amelia_unbal_mcar_10 <- amelia_Coff(amelia_unbal_mcar_10)
 
-Coeff_amelia_unbal_mcar_50 <- amelia_Coff_unbal(amelia_unbal_mcar_50)
-Coeff_amelia_unbal_mcar_30 <- amelia_Coff_unbal(amelia_unbal_mcar_30)
-Coeff_amelia_unbal_mcar_10 <- amelia_Coff_unbal(amelia_unbal_mcar_10)
+Coeff_amelia_unbal_mar_50 <- amelia_Coff(amelia_unbal_mar_50)
+Coeff_amelia_unbal_mar_30 <- amelia_Coff(amelia_unbal_mar_30)
+Coeff_amelia_unbal_mar_10 <- amelia_Coff(amelia_unbal_mar_10)
 
-Coeff_amelia_unbal_mar_50 <- amelia_Coff_unbal(amelia_unbal_mar_50)
-Coeff_amelia_unbal_mar_30 <- amelia_Coff_unbal(amelia_unbal_mar_30)
-Coeff_amelia_unbal_mar_10 <- amelia_Coff_unbal(amelia_unbal_mar_10)
-
-Coeff_amelia_unbal_mnar_50 <- amelia_Coff_unbal(amelia_unbal_mnar_50)
-Coeff_amelia_unbal_mnar_30 <- amelia_Coff_unbal(amelia_unbal_mnar_30)
-Coeff_amelia_unbal_mnar_10 <- amelia_Coff_unbal(amelia_unbal_mnar_10)
+Coeff_amelia_unbal_mnar_50 <- amelia_Coff(amelia_unbal_mnar_50)
+Coeff_amelia_unbal_mnar_30 <- amelia_Coff(amelia_unbal_mnar_30)
+Coeff_amelia_unbal_mnar_10 <- amelia_Coff(amelia_unbal_mnar_10)
 
 ### LSTM ###
 
-LSTM_Coff_bal <- function(data) {
+LSTM_Coff <- function(data) {
   
-  pdata <- pdata.frame(data, index = c("ID", "Year"))
+  # Fit the fixed effects model
+  FixedEffectModel <- plm(Income ~ EmploymentTypes + Age + MaritalStatus + EmploymentHours, data = data, model = "within")
   
-  RandomEffectModel <- plm(Income ~ Year + Education + Age, data = pdata, model = "random")
-  Coefficients <- coef(RandomEffectModel) # Coefficients extraction
-  Coefficients <- as.data.frame(Coefficients)
-  return(Coefficients)
+  # Extract coefficients directly
+  Coefficients <- coef(FixedEffectModel)
+  
+  # Convert coefficients to a data frame
+  CoefficientsDF <- data.frame(
+    Variable = names(Coefficients),
+    Coefficient = as.numeric(Coefficients),
+    stringsAsFactors = FALSE
+  )
+  
+  return(CoefficientsDF)
 }
 
 # Apply the function to each dataset and store results
-Coeff_lstm_bal_mcar_50 <- LSTM_Coff_bal(lstm_bal_mcar_50)
-Coeff_lstm_bal_mcar_30 <- LSTM_Coff_bal(lstm_bal_mcar_30)
-Coeff_lstm_bal_mcar_10 <- LSTM_Coff_bal(lstm_bal_mcar_10)
+Coeff_lstm_bal_mcar_50 <- LSTM_Coff(lstm_bal_mcar_50)
+Coeff_lstm_bal_mcar_30 <- LSTM_Coff(lstm_bal_mcar_30)
+Coeff_lstm_bal_mcar_10 <- LSTM_Coff(lstm_bal_mcar_10)
 
-Coeff_lstm_bal_mar_50 <- LSTM_Coff_bal(lstm_bal_mar_50)
-Coeff_lstm_bal_mar_30 <- LSTM_Coff_bal(lstm_bal_mar_30)
-Coeff_lstm_bal_mar_10 <- LSTM_Coff_bal(lstm_bal_mar_10)
+Coeff_lstm_bal_mar_50 <- LSTM_Coff(lstm_bal_mar_50)
+Coeff_lstm_bal_mar_30 <- LSTM_Coff(lstm_bal_mar_30)
+Coeff_lstm_bal_mar_10 <- LSTM_Coff(lstm_bal_mar_10)
 
-Coeff_lstm_bal_mnar_50 <- LSTM_Coff_bal(lstm_bal_mnar_50)
-Coeff_lstm_bal_mnar_30 <- LSTM_Coff_bal(lstm_bal_mnar_30)
-Coeff_lstm_bal_mnar_10 <- LSTM_Coff_bal(lstm_bal_mnar_10)
+Coeff_lstm_bal_mnar_50 <- LSTM_Coff(lstm_bal_mnar_50)
+Coeff_lstm_bal_mnar_30 <- LSTM_Coff(lstm_bal_mnar_30)
+Coeff_lstm_bal_mnar_10 <- LSTM_Coff(lstm_bal_mnar_10)
 
-### Unbalanced Panel
+Coeff_lstm_unbal_mcar_50 <- LSTM_Coff(lstm_unbal_mcar_50)
+Coeff_lstm_unbal_mcar_30 <- LSTM_Coff(lstm_unbal_mcar_30)
+Coeff_lstm_unbal_mcar_10 <- LSTM_Coff(lstm_unbal_mcar_10)
 
-LSTM_Coff_unbal <- function(data) {
-  
-  pdata <- pdata.frame(data, index = c("ID", "Year"))
-  
-  FixedEffectModel <- plm(Income ~ Year + Education + Age, data = pdata, model = "within")
-  Coefficients <- coef(FixedEffectModel) # Coefficients extraction
-  Coefficients <- as.data.frame(Coefficients)
-  return(Coefficients)
-}
+Coeff_lstm_unbal_mar_50 <- LSTM_Coff(lstm_unbal_mar_50)
+Coeff_lstm_unbal_mar_30 <- LSTM_Coff(lstm_unbal_mar_30)
+Coeff_lstm_unbal_mar_10 <- LSTM_Coff(lstm_unbal_mar_10)
 
-Coeff_lstm_unbal_mcar_50 <- LSTM_Coff_unbal(lstm_unbal_mcar_50)
-Coeff_lstm_unbal_mcar_30 <- LSTM_Coff_unbal(lstm_unbal_mcar_30)
-Coeff_lstm_unbal_mcar_10 <- LSTM_Coff_unbal(lstm_unbal_mcar_10)
+Coeff_lstm_unbal_mnar_50 <- LSTM_Coff(lstm_unbal_mnar_50)
+Coeff_lstm_unbal_mnar_30 <- LSTM_Coff(lstm_unbal_mnar_30)
+Coeff_lstm_unbal_mnar_10 <- LSTM_Coff(lstm_unbal_mnar_10)
 
-Coeff_lstm_unbal_mar_50 <- LSTM_Coff_unbal(lstm_unbal_mar_50)
-Coeff_lstm_unbal_mar_30 <- LSTM_Coff_unbal(lstm_unbal_mar_30)
-Coeff_lstm_unbal_mar_10 <- LSTM_Coff_unbal(lstm_unbal_mar_10)
+## Coefficients list
 
-Coeff_lstm_unbal_mnar_50 <- LSTM_Coff_unbal(lstm_unbal_mnar_50)
-Coeff_lstm_unbal_mnar_30 <- LSTM_Coff_unbal(lstm_unbal_mnar_30)
-Coeff_lstm_unbal_mnar_10 <- LSTM_Coff_unbal(lstm_unbal_mnar_10)
+'Coeff_mice_bal_mcar_50
+Coeff_mice_bal_mcar_30
+Coeff_mice_bal_mcar_10
+
+Coeff_mice_bal_mar_50 
+Coeff_mice_bal_mar_30
+Coeff_mice_bal_mar_10
+
+Coeff_mice_bal_mnar_50
+Coeff_mice_bal_mnar_30
+Coeff_mice_bal_mnar_10
+
+Coeff_mice_unbal_mcar_50
+Coeff_mice_unbal_mcar_30
+Coeff_mice_unbal_mcar_10
+
+Coeff_mice_unbal_mar_50
+Coeff_mice_unbal_mar_30
+Coeff_mice_unbal_mar_10
+
+Coeff_mice_unbal_mnar_50
+Coeff_mice_unbal_mnar_30
+Coeff_mice_unbal_mnar_10
+
+Coeff_mitml_bal_mcar_50
+Coeff_mitml_bal_mcar_30
+Coeff_mitml_bal_mcar_10
+
+Coeff_mitml_bal_mar_50
+Coeff_mitml_bal_mar_30
+Coeff_mitml_bal_mar_10
+
+Coeff_mitml_bal_mnar_50
+Coeff_mitml_bal_mnar_30
+Coeff_mitml_bal_mnar_10
+
+Coeff_mitml_unbal_mcar_50
+Coeff_mitml_unbal_mcar_30
+Coeff_mitml_unbal_mcar_10
+
+Coeff_mitml_unbal_mar_50
+Coeff_mitml_unbal_mar_30
+Coeff_mitml_unbal_mar_10
+
+Coeff_mitml_unbal_mnar_50
+Coeff_mitml_unbal_mnar_30
+Coeff_mitml_unbal_mnar_10
+
+Coeff_amelia_bal_mcar_50
+Coeff_amelia_bal_mcar_30
+Coeff_amelia_bal_mcar_10
+
+Coeff_amelia_bal_mar_50
+Coeff_amelia_bal_mar_30
+Coeff_amelia_bal_mar_10
+
+Coeff_amelia_bal_mnar_50
+Coeff_amelia_bal_mnar_30
+Coeff_amelia_bal_mnar_10
+Coeff_amelia_unbal_mcar_50
+Coeff_amelia_unbal_mcar_30
+Coeff_amelia_unbal_mcar_10
+
+Coeff_amelia_unbal_mar_50
+Coeff_amelia_unbal_mar_30
+Coeff_amelia_unbal_mar_10
+
+Coeff_amelia_unbal_mnar_50
+Coeff_amelia_unbal_mnar_30
+Coeff_amelia_unbal_mnar_10
+
+Coeff_lstm_bal_mcar_50
+Coeff_lstm_bal_mcar_30
+Coeff_lstm_bal_mcar_10
+
+Coeff_lstm_bal_mar_50
+Coeff_lstm_bal_mar_30
+Coeff_lstm_bal_mar_10
+
+Coeff_lstm_bal_mnar_50
+Coeff_lstm_bal_mnar_30
+Coeff_lstm_bal_mnar_10
+
+Coeff_lstm_unbal_mcar_50
+Coeff_lstm_unbal_mcar_30
+Coeff_lstm_unbal_mcar_10
+
+Coeff_lstm_unbal_mar_50
+Coeff_lstm_unbal_mar_30
+Coeff_lstm_unbal_mar_10
+
+Coeff_lstm_unbal_mnar_50
+Coeff_lstm_unbal_mnar_30
+Coeff_lstm_unbal_mnar_10'
