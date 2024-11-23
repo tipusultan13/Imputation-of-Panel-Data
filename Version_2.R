@@ -26,8 +26,8 @@ library(plm)
 # Load and clean the data
 RawData <- readRDS("population.RDS")
 RawData = data.frame(RawData)
-data = RawData[c("PID", "year", "EF44", "erwerbstyp", "inc.ind", "EF49", "vollzeit")]
-colnames(data) <- c("ID", "Year", "Age", "EmploymentTypes", "IndividualIncome", "MaritalStatus", "EmploymentHours") # Add sex, 
+data = RawData[c("PID", "year", "EF44", "erwerbstyp", "inc.ind", "EF49", "vollzeit", "EF310", "EF46")]
+colnames(data) <- c("ID", "Year", "Age", "EmploymentTypes", "IndividualIncome", "MaritalStatus", "EmploymentHours", "Education", "Sex")
 summary(data)
 
 # 'ID'
@@ -36,9 +36,6 @@ count(data, ID)
 # 'Year'
 count(data, Year)
 data <- subset(data, Year >= 2013 & Year <= 2023) # Keeping the data from 2013 to 2023
-
-# 'EmploymentTypes': employed (0), unemployed (1), and not in workforce (2).
-count(data, EmploymentTypes)
 
 # Age
 count(data, Age)
@@ -51,14 +48,8 @@ AgeDist <- ggplot(data, aes(x = Age)) +
   theme_minimal()
 AgeDist
 
-# MaritalStatus: Single (1), Married (2), Widowed (3), Divorced (4)
-count(data, MaritalStatus)
-summary(data$MaritalStatus)
-
-# EmploymentHours:Part-time (0), Full-time (1), Not working (NA)
-count(data, EmploymentHours)
-data$EmploymentHours[is.na(data$EmploymentHours)] <- 2
-summary(data$EmploymentHours)
+# 'EmploymentTypes': employed (0), unemployed (1), and not in workforce (2).
+count(data, EmploymentTypes)
 
 # Cleaning income column
 summary(data$IndividualIncome)
@@ -98,14 +89,35 @@ IFilteredIncomeLogHist
 
 grid.arrange(IndividualIncomeHist, IndividualIncomeLogHist, AFilteredIncomeLogHist, IFilteredIncomeLogHist, ncol = 2)
 
+# MaritalStatus: Single (1), Married (2), Widowed (3), Divorced (4)
+count(data, MaritalStatus)
+summary(data$MaritalStatus)
+
+# EmploymentHours:Part-time (0), Full-time (1), Not working (NA)
+count(data, EmploymentHours)
+data$EmploymentHours[is.na(data$EmploymentHours)] <- 2
+summary(data$EmploymentHours)
+
+# Education
+count(data, Education)
+data$Education[is.na(data$Education)] <- 7
+summary(data$Education)
+
+# Sex
+count(data, Sex)
+summary(data$Sex)
+
 sum(is.na(data)) #Total number of missing values
 colnames(data)[colnames(data) == "LogIndividualIncome"] <- "Income"
-data <- data[c("ID", "Year", "Age", "Income", "MaritalStatus", "EmploymentTypes", "EmploymentHours")]
+data <- data[c("ID", "Year", "Age", "Income", "MaritalStatus", "EmploymentTypes", "EmploymentHours", "Education", "Sex")]
 summary(data)
 
-#########################
-## Balanced Panel
-########################
+###########################################
+## Simulating Balanced and Unbalanced Panel
+###########################################
+
+## Balanced Panel ##
+####################
 
 data$Year <- as.numeric(data$Year) # Convert Year column to make the calculation easy
 
@@ -169,9 +181,8 @@ print(paste("Number of IDs appearing less than 11 times:", num_less_than_11))
 count(balanced_panel_data, Year)
 summary(balanced_panel_data)
 
-########################
-## Unalanced Panel
-########################
+## Unalanced Panel ##
+#####################
 
 SampleData <- data.frame()
 
@@ -432,9 +443,9 @@ aggr(balanced_panel_data_mnar_10,
      gap = 3, 
      ylab = c("Missing data", "Pattern"))
 
-#################################
-## Missingness in Unalanced Panel
-#################################
+###########################################
+## Simulating Missingness in Unalanced Panel
+###########################################
 
 #### MCAR ####
 ##############
@@ -648,7 +659,7 @@ aggr(unbalanced_panel_data_mnar_10,
      ylab = c("Missing data", "Pattern"))
 
 #####################################
-### Data Sets Overview and Formating
+### Datasets Overview and Formating
 ####################################
 
 ## Format Vriable to Their Originl Format
@@ -660,8 +671,10 @@ convert_DataTypes <- function(df) {
   df$Income <- as.numeric(df$Income)
   df$MaritalStatus <- as.factor(df$MaritalStatus)
   df$EmploymentHours <- as.factor(df$EmploymentHours)
+  df$Education <- as.factor(df$Education)
+  df$Sex <- as.factor(df$Sex)
   df <- pdata.frame(df, index = c("ID", "Year")) # Convert the data frame to a panel data frame
-  df <- df[c("ID", "Year", "Age", "EmploymentTypes", "Income", "MaritalStatus", "EmploymentHours")]
+  df <- df[c("ID", "Year", "Age", "EmploymentTypes", "Income", "MaritalStatus", "EmploymentHours", "Education", "Sex")]
   return(df)
 }
 
@@ -712,8 +725,11 @@ unbalanced_panel_data_mnar_10 <- convert_DataTypes(unbalanced_panel_data_mnar_10
 # unbalanced_panel_data_mnar_10
 
 ######################
-## mice package
+## Data Imputation
 ######################
+
+## mice ##
+##########
 
 packageVersion("mice") # Try (Age)^2
 
@@ -778,34 +794,31 @@ EndTime_mice <- Sys.time()  # Ending time
 ExecutionTime_mice <- EndTime_mice - StartTime_mice
 print(ExecutionTime_mice) # Time difference of 22.54844 mins
 
-######################
-## mitml package
-######################
+## mitml ##
+###########
 
 packageVersion("mitml")
 
-## Imputation ##
-
-## Balanced Panel##
+## Balanced ##
 
 StartTime_mitml <- Sys.time()  # Starting time
 
 # Estimate the models
-FE_Model <- plm(Income ~ EmploymentTypes + Age, data = balanced_panel_data, model = "within")
-RE_Model <- plm(Income ~ EmploymentTypes + Age, data = balanced_panel_data, model = "random")
+FE_Model <- plm(Income ~ Age + EmploymentTypes + MaritalStatus + Sex, data = balanced_panel_data, model = "within")
+RE_Model <- plm(Income ~ Age + EmploymentTypes + MaritalStatus + Sex, data = balanced_panel_data, model = "random")
 
 HausmanTest <- phtest(FE_Model, RE_Model) # Perform the Hausman test to compare the fixed and random effects models
 print(HausmanTest)
 # p-value is less than 2.2e-16, which is < 0.05. So null hypothesis can be rejected.
-# implying that the fixed effects in EmploymentTypes and Age is more appropriate.
+# implying that the fixed effects in Age, EmploymentTypes, MaritulStatus, and Sex is more appropriate.
 
 # Function to impute data
 Data_Imputation_mitml_Bal <- function(panel_data) {
   
-  SelectedData <- panel_data[c("ID", "Year", "Age", "EmploymentTypes", "Income", "MaritalStatus", "EmploymentHours")]
+  SelectedData <- panel_data[c("ID", "Year", "Age", "EmploymentTypes", "Income", "MaritalStatus", "EmploymentHours", "Education", "Sex")]
   
   # Define the type vector and assign column names
-  type <- c(-2, -1, 2, 2, 1,0,0)
+  type <- c(-2, -1, 2, 2, 1, 2, 0, 0, 2)
   names(type) <- colnames(SelectedData)
   
   ImputedData <- panImpute(panel_data, type = type, n.burn = 1000, n.iter = 100, m = 3)   # Impute missing data
@@ -828,24 +841,22 @@ mitml_bal_mnar_10 <- Data_Imputation_mitml_Bal(balanced_panel_data_mnar_10)
 
 ## Unbalanced ##
 
-pdata_unbal <- pdata.frame(unbalanced_panel_data, index = c("ID", "Year")) # Convert the data frame to a panel data frame
-
 # Estimate the models
-FE_Model <- plm(Income ~ EmploymentTypes + Age, data = balanced_panel_data, model = "within")
-RE_Model <- plm(Income ~ EmploymentTypes + Age, data = balanced_panel_data, model = "random")
+FE_Model <- plm(Income ~ Age + EmploymentTypes + MaritalStatus + Sex, data = unbalanced_panel_data, model = "within")
+RE_Model <- plm(Income ~ Age + EmploymentTypes + MaritalStatus + Sex, data = unbalanced_panel_data, model = "random")
 
 HausmanTest <- phtest(FE_Model, RE_Model) # Perform the Hausman test to compare the fixed and random effects models
 print(HausmanTest)
 # p-value is less than 2.2e-16, which is < 0.05. So null hypothesis can be rejected.
-# implying that the fixed effects in Education and Age is more appropriate.
+# implying that the fixed effects in Age, EmploymentTypes, MaritulStatus, and Sex is more appropriate.
 
 # Function to impute data for unbalanced panels
 Data_Imputation_mitml_Unbal <- function(panel_data) {
   
-  SelectedData <- panel_data[c("ID", "Year", "Age", "EmploymentTypes", "Income", "MaritalStatus", "EmploymentHours")]
+  SelectedData <- panel_data[c("ID", "Year", "Age", "EmploymentTypes", "Income", "MaritalStatus", "EmploymentHours", "Education", "Sex")]
   
   # Define the type vector and assign column names
-  type <- c(-2, -1, 2, 2, 1,0,0)
+  type <- c(-2, -1, 2, 2, 1, 2, 0, 0, 2)
   names(type) <- colnames(SelectedData)
   
   ImputedData <- panImpute(SelectedData, type = type, n.burn = 1000, n.iter = 100, m = 3)   # Impute missing data
@@ -868,11 +879,11 @@ mitml_unbal_mnar_10 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mnar_10
 
 EndTime_mitml <- Sys.time()  # Ending time
 ExecutionTime_mitml <- EndTime_mitml - StartTime_mitml
-print(ExecutionTime_mitml) # Time difference of 11.92108 mins
+print(ExecutionTime_mitml) # Time difference of 21.55928 mins
 
-############################
-## Amelia package
-############################
+
+## amelia
+##########
 
 packageVersion("Amelia")
 
@@ -881,7 +892,7 @@ StartTime_amelia <- Sys.time()  # Starting time
 # Function to impute data
 Data_Imputation_Amelia <- function(data) {
   
-  pdata = data[c("ID", "Year", "Age", "EmploymentTypes", "Income")]
+  pdata = data[c("ID", "Year", "Age", "EmploymentTypes", "Income", "MaritalStatus", "Sex")]
   pdata$Year <- as.numeric(as.character(pdata$Year))
   
   # Perform the imputation using Amelia
@@ -890,13 +901,15 @@ Data_Imputation_Amelia <- function(data) {
     m = 3,
     ts = "Year",
     cs = "ID",
-    noms = "EmploymentTypes"
+    noms = c("EmploymentTypes", "MaritalStatus", "Sex")
   )
-  # Add exogenous variables (MaritalStatus and EmploymentHours) back to each imputed dataset
+  # Add exogenous variables (EmploymentHours and Education) back to each imputed dataset and restore original order
   ImputedData <- lapply(ImputedData$imputations, function(df) {
-    cbind(df, data[c("MaritalStatus", "EmploymentHours")])
+    df <- cbind(df, data[c("Education", "EmploymentHours")])
+    df <- df[c("ID", "Year", "Age", "EmploymentTypes", "Income", "MaritalStatus", 
+               "EmploymentHours", "Education", "Sex")]
+    return(df)
   })
-  return(ImputedData)
 }
 
 # Apply the function to each dataset and store results
@@ -926,11 +939,10 @@ amelia_unbal_mnar_10 <- Data_Imputation_Amelia(unbalanced_panel_data_mnar_10)
 
 EndTime_amelia <- Sys.time()  # Ending time
 ExecutionTime_amelia <- EndTime_amelia - StartTime_amelia
-print(ExecutionTime_amelia) # Time difference of 1.463465 hours
+print(ExecutionTime_amelia) # Time difference of 1.530199 hours
 
-############################
-## LSTM Network
-############################
+## LSTM Network ##
+################
 
 packageVersion("keras")
 
@@ -939,7 +951,7 @@ StartTime_LSTM <- Sys.time()  # Starting time
 Data_Imputation_LSTM <- function(Data) {
   
   # Removing the exogenious variable to keep their effect
-  data = Data[c("ID", "Year", "Age", "EmploymentTypes", "Income")]
+  data <- Data[c("ID", "Year", "Age", "EmploymentTypes", "Income", "MaritalStatus", "Sex")]
   
   # Remove the rows of the cells that include missing values
   MissingRows <- which(is.na(data$Income))
@@ -958,18 +970,20 @@ Data_Imputation_LSTM <- function(Data) {
   # Convert categorical columns to numeric encoding
   CompleteData <- CompleteData %>%
     mutate(Year = as.numeric(factor(Year)),
-           EmploymentTypes = as.numeric(factor(EmploymentTypes)))
+           EmploymentTypes = as.numeric(factor(EmploymentTypes)),
+           MaritalStatus = as.numeric(factor(MaritalStatus)),
+           Sex = as.numeric(factor(Sex)))
   
   # Prepare data to train the model, excluding ID
-  TrainX <- as.matrix(CompleteData %>% select(Year, EmploymentTypes, Age))
+  TrainX <- as.matrix(CompleteData %>% select(Year, EmploymentTypes, Age, MaritalStatus, Sex))
   TrainY <- CompleteData$Income
   
-  # Reshape the data into 3D to make LSTM calculation easier (samples, timesteps=1, features=3)
+  # Reshape the data into 3D to make LSTM calculation easier (samples, timesteps=1, features=5)
   TrainX <- array(TrainX, dim = c(nrow(TrainX), 1, ncol(TrainX)))
   
   # Build the model
   model <- keras_model_sequential() %>%
-    layer_lstm(units = 50, input_shape = c(1, 3), return_sequences = FALSE) %>%
+    layer_lstm(units = 50, input_shape = c(1, 5), return_sequences = FALSE) %>%
     layer_dense(units = 1)
   
   model %>% compile(
@@ -986,15 +1000,18 @@ Data_Imputation_LSTM <- function(Data) {
   MissingValues <- MissingValues %>%
     mutate(Year = as.numeric(factor(Year)),
            EmploymentTypes = as.numeric(factor(EmploymentTypes)),
-           Age = (Age - AgeM) / AgeSD)  # Normalize Age for missing data
+           MaritalStatus = as.numeric(factor(MaritalStatus)),
+           Sex = as.numeric(factor(Sex)),
+           Age = (Age - AgeM) / AgeSD)
   
-  XMissing <- as.matrix(MissingValues %>% select(Year, EmploymentTypes, Age))
+  XMissing <- as.matrix(MissingValues %>% select(Year, EmploymentTypes, Age, MaritalStatus, Sex))
   XMissing <- array(XMissing, dim = c(nrow(XMissing), 1, ncol(XMissing)))
   
-  PredictedIncome <- model %>% predict(XMissing) # Predict the missing values
-  PredictedIncome <- PredictedIncome * IncomeSD + IncomeM # De-normalize the predicted income
-  data$Income[MissingRows] <- PredictedIncome # Fill the missing values
-  data <- cbind(data, Data[c("MaritalStatus", "EmploymentHours")])
+  PredictedIncome <- model %>% predict(XMissing)
+  PredictedIncome <- PredictedIncome * IncomeSD + IncomeM
+  data$Income[MissingRows] <- PredictedIncome
+  data <- cbind(data, Data[c("Education", "EmploymentHours")])
+  data <- data[c("ID", "Year", "Age", "EmploymentTypes", "Income", "MaritalStatus", "EmploymentHours", "Education", "Sex")]
   return(data)
 }
 
@@ -1025,11 +1042,11 @@ lstm_unbal_mnar_10 <- Data_Imputation_LSTM(unbalanced_panel_data_mnar_10)
 
 EndTime_LSTM <- Sys.time()  # Ending time
 ExecutionTime_LSTM <- EndTime_LSTM - StartTime_LSTM
-print(ExecutionTime_LSTM) # Time difference of 11.66831 mins
+print(ExecutionTime_LSTM) # Time difference of 2.417554 hours
 
-#########################################
+########################
 ## Statistical Analysis
-#########################################
+########################
 
 
 
@@ -1042,7 +1059,7 @@ print(ExecutionTime_LSTM) # Time difference of 11.66831 mins
 #############################
 
 ##### mice #####
-
+###############
 miceData <- function(data) {
   
   CombinedData <- do.call(rbind, data)
@@ -1092,28 +1109,28 @@ plot(DataTemp_mice,
 
 IncDist_mice(mice_imp_bal_mcar_50, "blue")
 IncDist_mice(mice_imp_bal_mcar_30, "red")
-IncDist_mice(mice_imp_bal_mcar_10, "pink")
+IncDist_mice(mice_imp_bal_mcar_10, "green")
 legend("topright", 
        legend = c("Initial Data", "bal_mcar_50", "bal_mcar_30", "bal_mcar_10"),
-       col = c("black", "blue", "red", "pink"),
+       col = c("black", "blue", "red", "green"),
        lwd = 2,
        cex = 0.8)
 
-IncDist_mice(mice_imp_bal_mar_50, "skyblue")
-IncDist_mice(mice_imp_bal_mar_30, "violet")
-IncDist_mice(mice_imp_bal_mar_10, "yellow")
+IncDist_mice(mice_imp_bal_mar_50, "blue")
+IncDist_mice(mice_imp_bal_mar_30, "red")
+IncDist_mice(mice_imp_bal_mar_10, "green")
 legend("topright", 
        legend = c("Initial Data", "bal_mar_50", "bal_mar_30", "bal_mar_10"),
-       col = c("black", "skyblue", "violet", "yellow"),
+       col = c("black", "blue", "red", "green"),
        lwd = 2,
        cex = 0.8)
 
-IncDist_mice(mice_imp_bal_mnar_50, "orange")
-IncDist_mice(mice_imp_bal_mnar_30, "green")
-IncDist_mice(mice_imp_bal_mnar_10, "brown")
+IncDist_mice(mice_imp_bal_mnar_50, "blue")
+IncDist_mice(mice_imp_bal_mnar_30, "red")
+IncDist_mice(mice_imp_bal_mnar_10, "green")
 legend("topright", 
        legend = c("Initial Data", "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
-       col = c("black", "orange", "green", "brown"),
+       col = c("black", "blue", "red", "green"),
        lwd = 2,
        cex = 0.8)
 
@@ -1126,34 +1143,35 @@ plot(DataTemp_mice,
      ylab = "Density",
      lwd = 2, col = "black")
 
-IncDist_mice(mice_imp_unbal_mcar_50, "coral")
-IncDist_mice(mice_imp_unbal_mcar_30, "salmon")
-IncDist_mice(mice_imp_unbal_mcar_10, "lavender")
+IncDist_mice(mice_imp_unbal_mcar_50, "blue")
+IncDist_mice(mice_imp_unbal_mcar_30, "red")
+IncDist_mice(mice_imp_unbal_mcar_10, "green")
 legend("topright", 
        legend = c("Initial Data", "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10"),
-       col = c("black", "coral", "salmon", "lavender"),
+       col = c("black", "blue", "red", "green"),
        lwd = 2,
        cex = 0.8)
 
-IncDist_mice(mice_imp_unbal_mar_50, "gray")
-IncDist_mice(mice_imp_unbal_mar_30, "gold")
-IncDist_mice(mice_imp_unbal_mar_10, "orchid")
+IncDist_mice(mice_imp_unbal_mar_50, "blue")
+IncDist_mice(mice_imp_unbal_mar_30, "red")
+IncDist_mice(mice_imp_unbal_mar_10, "green")
 legend("topright", 
        legend = c("Initial Data","unbal_mar_50", "unbal_mar_30", "unbal_mar_10"),
-       col = c("black", "gray", "gold", "orchid"),
+       col = c("black", "blue", "red", "green"),
        lwd = 2,
        cex = 0.8)
 
-IncDist_mice(mice_imp_unbal_mnar_50, "navy")
-IncDist_mice(mice_imp_unbal_mnar_30, "darkgreen")
-IncDist_mice(mice_imp_unbal_mnar_10, "steelblue")
+IncDist_mice(mice_imp_unbal_mnar_50, "blue")
+IncDist_mice(mice_imp_unbal_mnar_30, "red")
+IncDist_mice(mice_imp_unbal_mnar_10, "green")
 legend("topright", 
        legend = c("Initial Data", "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
-       col = c("black", "navy", "darkgreen", "steelblue"),
+       col = c("black", "blue", "red", "green"),
        lwd = 2,
        cex = 0.8)
 
 ##### mitml #####
+################
 
 # Data Combination
 mitmlData <- function(data){
@@ -1203,32 +1221,32 @@ plot(DataTemp_mitml,
 # Balanced Data
 IncDist_mitml(mitml_imp_bal_mcar_50, "blue")
 IncDist_mitml(mitml_imp_bal_mcar_30, "red")
-IncDist_mitml(mitml_imp_bal_mcar_10, "pink")
+IncDist_mitml(mitml_imp_bal_mcar_10, "green")
 legend("topright", 
        legend = c("Initial Data", "bal_mcar_50", "bal_mcar_30", "bal_mcar_10"),
-       col = c("black", "blue", "red", "pink"),
+       col = c("black", "blue", "red", "green"),
        lwd = 2,
        cex = 0.8)
 
-IncDist_mitml(mitml_imp_bal_mar_50, "skyblue")
-IncDist_mitml(mitml_imp_bal_mar_30, "violet")
-IncDist_mitml(mitml_imp_bal_mar_10, "yellow")
+IncDist_mitml(mitml_imp_bal_mar_50, "blue")
+IncDist_mitml(mitml_imp_bal_mar_30, "red")
+IncDist_mitml(mitml_imp_bal_mar_10, "green")
 legend("topright", 
        legend = c("Initial Data", "bal_mar_50", "bal_mar_30", "bal_mar_10"),
-       col = c("black","skyblue", "violet", "yellow"),
+       col = c("black","blue", "red", "green"),
        lwd = 2,
        cex = 0.8)
 
-IncDist_mitml(mitml_imp_bal_mnar_50, "orange")
-IncDist_mitml(mitml_imp_bal_mnar_30, "green")
-IncDist_mitml(mitml_imp_bal_mnar_10, "brown")
+IncDist_mitml(mitml_imp_bal_mnar_50, "blue")
+IncDist_mitml(mitml_imp_bal_mnar_30, "red")
+IncDist_mitml(mitml_imp_bal_mnar_10, "green")
 legend("topright", 
        legend = c("Initial Data", "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
-       col = c("black", "orange", "green", "brown"),
+       col = c("black", "blue", "red", "green"),
        lwd = 2,
        cex = 0.8)
 
-### Unbalanced data
+### Unbalanced
 
 DataTemp_mitml <- density(unbalanced_panel_data$Income, na.rm = TRUE)
 plot(DataTemp_mitml, 
@@ -1237,34 +1255,35 @@ plot(DataTemp_mitml,
      ylab = "Density",
      lwd = 2, col = "black")
 
-IncDist_mitml(mitml_imp_unbal_mcar_50, "coral")
-IncDist_mitml(mitml_imp_unbal_mcar_30, "salmon")
-IncDist_mitml(mitml_imp_unbal_mcar_10, "lavender")
+IncDist_mitml(mitml_imp_unbal_mcar_50, "blue")
+IncDist_mitml(mitml_imp_unbal_mcar_30, "red")
+IncDist_mitml(mitml_imp_unbal_mcar_10, "green")
 legend("topright", 
        legend = c("Initial Data", "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10"),
-       col = c("black", "coral", "salmon", "lavender"),
+       col = c("black", "blue", "red", "green"),
        lwd = 2,
        cex = 0.8)
 
-IncDist_mitml(mitml_imp_unbal_mar_50, "gray")
-IncDist_mitml(mitml_imp_unbal_mar_30, "gold")
-IncDist_mitml(mitml_imp_unbal_mar_10, "orchid")
+IncDist_mitml(mitml_imp_unbal_mar_50, "blue")
+IncDist_mitml(mitml_imp_unbal_mar_30, "red")
+IncDist_mitml(mitml_imp_unbal_mar_10, "green")
 legend("topright", 
        legend = c("Initial Data", "unbal_mar_50", "unbal_mar_30", "unbal_mar_10"),
-       col = c("black", "gray", "gold", "orchid"),
+       col = c("black", "blue", "red", "green"),
        lwd = 2,
        cex = 0.8)
 
-IncDist_mitml(mitml_imp_unbal_mnar_50, "navy")
-IncDist_mitml(mitml_imp_unbal_mnar_30, "darkgreen")
-IncDist_mitml(mitml_imp_unbal_mnar_10, "steelblue")
+IncDist_mitml(mitml_imp_unbal_mnar_50, "blue")
+IncDist_mitml(mitml_imp_unbal_mnar_30, "red")
+IncDist_mitml(mitml_imp_unbal_mnar_10, "green")
 legend("topright", 
        legend = c("Initial Data", "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
-       col = c("black", "navy", "darkgreen", "steelblue"),
+       col = c("black", "blue", "red", "green"),
        lwd = 2,
        cex = 0.8)
 
-### amelia
+### amelia ###
+##############
 
 # Data Combination
 ameliaData <- function(data){
@@ -1313,28 +1332,28 @@ plot(DataTemp_amelia,
 
 IncDist_amelia(amelia_imp_bal_mcar_50, "blue")
 IncDist_amelia(amelia_imp_bal_mcar_30, "red")
-IncDist_amelia(amelia_imp_bal_mcar_10, "pink")
+IncDist_amelia(amelia_imp_bal_mcar_10, "green")
 legend("topright", 
        legend = c("Initial Data", "bal_mcar_50", "bal_mcar_30", "bal_mcar_10"),
-       col = c("black", "blue", "red", "pink"),
+       col = c("black", "blue", "red", "green"),
        lwd = 2,
        cex = 0.8)
 
-IncDist_amelia(amelia_imp_bal_mar_50, "skyblue")
-IncDist_amelia(amelia_imp_bal_mar_30, "violet")
-IncDist_amelia(amelia_imp_bal_mar_10, "yellow")
+IncDist_amelia(amelia_imp_bal_mar_50, "blue")
+IncDist_amelia(amelia_imp_bal_mar_30, "red")
+IncDist_amelia(amelia_imp_bal_mar_10, "green")
 legend("topright", 
        legend = c("Initial Data","bal_mar_50", "bal_mar_30", "bal_mar_10"),
-       col = c("black", "skyblue", "violet", "yellow"),
+       col = c("black", "blue", "red", "green"),
        lwd = 2,
        cex = 0.8)
 
-IncDist_amelia(amelia_imp_bal_mnar_50, "orange")
-IncDist_amelia(amelia_imp_bal_mnar_30, "green")
-IncDist_amelia(amelia_imp_bal_mnar_10, "brown")
+IncDist_amelia(amelia_imp_bal_mnar_50, "blue")
+IncDist_amelia(amelia_imp_bal_mnar_30, "red")
+IncDist_amelia(amelia_imp_bal_mnar_10, "green")
 legend("topright", 
        legend = c("Initial Data", "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
-       col = c("black", "orange", "green", "brown"),
+       col = c("black", "blue", "red", "green"),
        lwd = 2,
        cex = 0.8)
 
@@ -1346,34 +1365,35 @@ plot(DataTemp_amelia,
      ylab = "Density",
      lwd = 2, col = "black")
 
-IncDist_amelia(amelia_imp_unbal_mcar_50, "coral")
-IncDist_amelia(amelia_imp_unbal_mcar_30, "salmon")
-IncDist_amelia(amelia_imp_unbal_mcar_10, "lavender")
+IncDist_amelia(amelia_imp_unbal_mcar_50, "blue")
+IncDist_amelia(amelia_imp_unbal_mcar_30, "red")
+IncDist_amelia(amelia_imp_unbal_mcar_10, "green")
 legend("topright", 
        legend = c("Initial Data", "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10"),
-       col = c("black", "coral", "salmon", "lavender"),
+       col = c("black", "blue", "red", "green"),
        lwd = 2,
        cex = 0.8)
 
-IncDist_amelia(amelia_imp_unbal_mar_50, "gray")
-IncDist_amelia(amelia_imp_unbal_mar_30, "gold")
-IncDist_amelia(amelia_imp_unbal_mar_10, "orchid")
+IncDist_amelia(amelia_imp_unbal_mar_50, "blue")
+IncDist_amelia(amelia_imp_unbal_mar_30, "red")
+IncDist_amelia(amelia_imp_unbal_mar_10, "green")
 legend("topright", 
        legend = c("Initial Data", "unbal_mar_50", "unbal_mar_30", "unbal_mar_10"),
-       col = c("black", "gray", "gold", "orchid"),
+       col = c("black", "blue", "red", "green"),
        lwd = 2,
        cex = 0.8)
 
-IncDist_amelia(amelia_imp_unbal_mnar_50, "navy")
-IncDist_amelia(amelia_imp_unbal_mnar_30, "darkgreen")
-IncDist_amelia(amelia_imp_unbal_mnar_10, "steelblue")
+IncDist_amelia(amelia_imp_unbal_mnar_50, "blue")
+IncDist_amelia(amelia_imp_unbal_mnar_30, "red")
+IncDist_amelia(amelia_imp_unbal_mnar_10, "green")
 legend("topright", 
        legend = c("Initial Data", "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
-       col = c("black", "navy", "darkgreen", "steelblue"),
+       col = c("black", "blue", "red", "green"),
        lwd = 2,
        cex = 0.8)
 
-### LSTM-Network
+### LSTM-Network ###
+####################
 
 # Plot Distribution
 IncDist_LSTM <- function(data, col) {
@@ -1391,28 +1411,28 @@ plot(DataTemp_LSTM,
 
 IncDist_LSTM(lstm_bal_mcar_50, "blue")
 IncDist_LSTM(lstm_bal_mcar_30, "red")
-IncDist_LSTM(lstm_bal_mcar_10, "pink")
+IncDist_LSTM(lstm_bal_mcar_10, "green")
 legend("topright", 
        legend = c("Initial Data", "bal_mcar_50", "bal_mcar_30", "bal_mcar_10"),
-       col = c("black", "blue", "red", "pink"),
+       col = c("black", "blue", "red", "green"),
        lwd = 2,
        cex = 0.8)
 
-IncDist_LSTM(lstm_bal_mar_50, "skyblue")
-IncDist_LSTM(lstm_bal_mar_30, "violet")
-IncDist_LSTM(lstm_bal_mar_10, "yellow")
+IncDist_LSTM(lstm_bal_mar_50, "blue")
+IncDist_LSTM(lstm_bal_mar_30, "red")
+IncDist_LSTM(lstm_bal_mar_10, "green")
 legend("topright", 
        legend = c("Initial Data", "bal_mar_50", "bal_mar_30", "bal_mar_10"),
-       col = c("black", "skyblue", "violet", "yellow"),
+       col = c("black", "blue", "red", "green"),
        lwd = 2,
        cex = 0.8)
 
-IncDist_LSTM(lstm_bal_mnar_50, "orange")
-IncDist_LSTM(lstm_bal_mnar_30, "green")
-IncDist_LSTM(lstm_bal_mnar_10, "brown")
+IncDist_LSTM(lstm_bal_mnar_50, "blue")
+IncDist_LSTM(lstm_bal_mnar_30, "red")
+IncDist_LSTM(lstm_bal_mnar_10, "green")
 legend("topright", 
        legend = c("Initial Data", "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
-       col = c("black", "orange", "green", "brown"),
+       col = c("black", "blue", "red", "green"),
        lwd = 2,
        cex = 0.8)
 
@@ -1424,38 +1444,38 @@ plot(DataTemp_LSTM,
      ylab = "Density",
      lwd = 2, col = "black")
 
-IncDist_LSTM(lstm_unbal_mcar_50, "coral")
-IncDist_LSTM(lstm_unbal_mcar_30, "salmon")
-IncDist_LSTM(lstm_unbal_mcar_10, "lavender")
+IncDist_LSTM(lstm_unbal_mcar_50, "blue")
+IncDist_LSTM(lstm_unbal_mcar_30, "red")
+IncDist_LSTM(lstm_unbal_mcar_10, "green")
 legend("topright", 
        legend = c("Initial Data", "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10"),
-       col = c("black", "coral", "salmon", "lavender"),
+       col = c("black", "blue", "red", "green"),
        lwd = 2,
-       cex = 0.6)
+       cex = 0.8)
 
-IncDist_LSTM(lstm_unbal_mar_50, "gray")
-IncDist_LSTM(lstm_unbal_mar_30, "gold")
-IncDist_LSTM(lstm_unbal_mar_10, "orchid")
+IncDist_LSTM(lstm_unbal_mar_50, "blue")
+IncDist_LSTM(lstm_unbal_mar_30, "red")
+IncDist_LSTM(lstm_unbal_mar_10, "green")
 legend("topright", 
        legend = c("Initial Data", "unbal_mar_50", "unbal_mar_30", "unbal_mar_10"),
-       col = c("black", "gray", "gold", "orchid"),
+       col = c("black", "blue", "red", "green"),
        lwd = 2,
-       cex = 0.6)
+       cex = 0.8)
 
-IncDist_LSTM(lstm_unbal_mnar_50, "navy")
-IncDist_LSTM(lstm_unbal_mnar_30, "darkgreen")
-IncDist_LSTM(lstm_unbal_mnar_10, "steelblue")
+IncDist_LSTM(lstm_unbal_mnar_50, "blue")
+IncDist_LSTM(lstm_unbal_mnar_30, "red")
+IncDist_LSTM(lstm_unbal_mnar_10, "green")
 legend("topright", 
        legend = c("Initial Data", "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
-       col = c("black", "navy", "darkgreen", "steelblue"),
+       col = c("black", "blue", "red", "green"),
        lwd = 2,
-       cex = 0.6)
+       cex = 0.8)
 
 par(mfrow = c(1, 1))
 
 ###########################
 ### Coefficients Comparison
-##########################
+###########################
 
 # Select the appropriate model
 ModelSelection <- function(data) {
