@@ -736,42 +736,42 @@ packageVersion("mice")
 
 StartTime_mice <- Sys.time()  # Starting time
 
-Data_Imputation_mice <- function(data, m = 2, maxit = 2, method = 'pmm') {
+Data_Imputation_mice <- function(data, IDColumn = "ID", TargetColumn = "Income", 
+                                 LaggedColumns = c("EmploymentTypes", "MaritalStatus", "Sex", "Income"), 
+                                 m = 5, maxit = 100, method = "pmm") {
   
-  # Lagged exogenious variables
-  data$Lagged_MaritalStatus <- lag(data$MaritalStatus, 1)
-  data$LaggedSex <- lag(data$LaggedSex, 1)
-  SquaredAge <- data$Age^2
-  data$LaggedEmploymentTypes <- lag(data$LaggedEmploymentTypes, 1)
+  # Making ID factor and year numeric for proper lagging
+  data[[IDColumn]] <- as.factor(data[[IDColumn]])
+  data$Year <- as.numeric(data$Year)
   
-    
-    
-  ID <- data$ID
-  Year <- data$Year
-  EmploymentTypes <- data$EmploymentTypes
-  MaritalStatus <- data$MaritalStatus
-  Education <- data$Education
-  Sex <- data$Sex
-  LaggedSex <- data$LaggedSex
-  LaggedEmploymentTypes <- data$LaggedEmploymentTypes
+  # Generate lagging variables
+  for (col in LaggedColumns) {
+    LaggedNames <- paste0("lag_", col)
+    data <- data %>%
+      group_by(!!sym(IDColumn)) %>%
+      arrange(Year, .by_group = TRUE) %>%
+      mutate(!!sym(LaggedNames) := lag(!!sym(col))) %>%
+      ungroup()
+  }
   
-  DataTemp <- data[c("SquaredAge", "Lagged_MaritalStatus", "LaggedSex", "LaggedEmploymentTypes", "Income")]
-  miceImp <- mice(DataTemp, method = method, m = m, maxit = maxit) # Perform MICE imputation
+  # Remove the rows due to existing missing values in other columns. For example: first year for each ID
+  LaggedVars <- paste0("lag_", LaggedColumns)
+  data <- data %>% filter(rowSums(is.na(select(., all_of(LaggedVars)))) == 0)
   
-  # Readd the ID column
-  CompleteDataset <- lapply(1:m, function(i) {
-    CompleteData <- complete(miceImp, action = i)
-    CompleteData <- cbind(ID = ID,
-                          Year = Year,
-                          EmploymentTypes = EmploymentTypes,
-                          MaritalStatus = MaritalStatus,
-                          EmploymentHours = EmploymentHours,
-                          CompleteData)
-    CompleteData <- CompleteData[c("ID", "Year", "Age", "EmploymentTypes", "Income", "MaritalStatus", "EmploymentHours", "Education", "Sex")]
-    return(CompleteData)
-  })
+  PredMat <- make.predictorMatrix(data) # matrix of predictors
+  PredMat[, IDColumn] <- 0 # Remove ID from the list of predictors
+  PredMat[, ] <- 0
+  PredMat[colnames(PredMat) %in% c("lag_EmploymentTypes", "lag_MaritalStatus", 
+                                           "lag_Sex", "lag_Income", "Age"), TargetColumn] <- 1
   
-  return(CompleteDataset)  # Return a list of completed datasets
+  ImputedData <- mice(data, m = m, maxit = maxit, method = method, predictorMatrix = PredMat) # Implement mice
+  
+  # Get the original rows and the imputed Income
+  CompletedData <- lapply(1:m, function(i) complete(ImputedData, action = i))
+  OriginalColumns <- c("ID", "Year", "Age", "EmploymentTypes", "Income", "MaritalStatus", 
+                     "EmploymentHours", "Education", "Sex")
+  CompletedData <- lapply(CompletedData, function(df) df[, OriginalColumns])
+  return(CompletedData)
 }
 
 # Apply imputation
@@ -801,7 +801,7 @@ mice_unbal_mnar_10 <- Data_Imputation_mice(unbalanced_panel_data_mnar_10)
 
 EndTime_mice <- Sys.time()  # Ending time
 ExecutionTime_mice <- EndTime_mice - StartTime_mice
-print(ExecutionTime_mice) # Time difference of 22.54844 mins
+print(ExecutionTime_mice) # Time difference of 13.70923 mins
 
 ## mitml ##
 ###########
@@ -830,7 +830,7 @@ Data_Imputation_mitml_Bal <- function(panel_data) {
   type <- c(-2, -1, 2, 2, 1, 2, 0, 0, 2)
   names(type) <- colnames(SelectedData)
   
-  ImputedData <- panImpute(panel_data, type = type, n.burn = 1000, n.iter = 100, m = 3)   # Impute missing data
+  ImputedData <- panImpute(panel_data, type = type, n.burn = 1000, n.iter = 100, m = 5)   # Impute missing data
   ImputedList <- mitmlComplete(ImputedData, print = "all")
   return(ImputedList)
 }
@@ -868,7 +868,7 @@ Data_Imputation_mitml_Unbal <- function(panel_data) {
   type <- c(-2, -1, 2, 2, 1, 2, 0, 0, 2)
   names(type) <- colnames(SelectedData)
   
-  ImputedData <- panImpute(SelectedData, type = type, n.burn = 1000, n.iter = 100, m = 3)   # Impute missing data
+  ImputedData <- panImpute(SelectedData, type = type, n.burn = 1000, n.iter = 100, m = 5)   # Impute missing data
   ImputedList <- mitmlComplete(ImputedData, print = "all")   # Extract imputed datasets
   return(ImputedList)
 }
@@ -888,7 +888,7 @@ mitml_unbal_mnar_10 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mnar_10
 
 EndTime_mitml <- Sys.time()  # Ending time
 ExecutionTime_mitml <- EndTime_mitml - StartTime_mitml
-print(ExecutionTime_mitml) # Time difference of 21.55928 mins
+print(ExecutionTime_mitml) # Time difference of 25.28873 mins
 
 
 ## amelia
@@ -907,7 +907,7 @@ Data_Imputation_Amelia <- function(data) {
   # Perform the imputation using Amelia
   ImputedData <- amelia(
     pdata,
-    m = 3,
+    m = 5,
     ts = "Year",
     cs = "ID",
     noms = c("EmploymentTypes", "MaritalStatus", "Sex")
@@ -948,7 +948,7 @@ amelia_unbal_mnar_10 <- Data_Imputation_Amelia(unbalanced_panel_data_mnar_10)
 
 EndTime_amelia <- Sys.time()  # Ending time
 ExecutionTime_amelia <- EndTime_amelia - StartTime_amelia
-print(ExecutionTime_amelia) # Time difference of 1.530199 hours
+print(ExecutionTime_amelia) # Time difference of 5.355461 hours
 
 ## LSTM Network ##
 ################
@@ -1811,6 +1811,7 @@ Coeff_amelia_bal_mar_10
 Coeff_amelia_bal_mnar_50
 Coeff_amelia_bal_mnar_30
 Coeff_amelia_bal_mnar_10
+
 Coeff_amelia_unbal_mcar_50
 Coeff_amelia_unbal_mcar_30
 Coeff_amelia_unbal_mcar_10
@@ -1846,3 +1847,48 @@ Coeff_lstm_unbal_mar_10
 Coeff_lstm_unbal_mnar_50
 Coeff_lstm_unbal_mnar_30
 Coeff_lstm_unbal_mnar_10'
+
+### Bias ##
+###########
+
+# Generate dataframe and columns
+NewColNames <- function(dataset) {
+  colnames(dataset) <- c("Variable", "Coefficients")
+  return(dataset)
+}
+Datasets <- lapply(all_coeff_datasets, NewColNames)
+
+# Add Identifiers
+DatasetIdentifiers <- function(dataset, dataset_name) {
+  dataset$Dataset <- dataset_name
+  return(dataset)
+}
+
+# Coefficients lists
+DatasetNames <- c(
+  "mice_mcar_50", "mice_mcar_30", "mice_mcar_10",
+  "mice_mar_50", "mice_mar_30", "mice_mar_10",
+  "mice_mnar_50", "mice_mnar_30", "mice_mnar_10",
+  "mitml_mcar_50", "mitml_mcar_30", "mitml_mcar_10",
+  "mitml_mar_50", "mitml_mar_30", "mitml_mar_10",
+  "mitml_mnar_50", "mitml_mnar_30", "mitml_mnar_10",
+  "amelia_mcar_50", "amelia_mcar_30", "amelia_mcar_10",
+  "amelia_mar_50", "amelia_mar_30", "amelia_mar_10",
+  "lstm_mcar_50", "lstm_mcar_30", "lstm_mcar_10",
+  "lstm_mar_50", "lstm_mar_30", "lstm_mar_10",
+  "lstm_mnar_50", "lstm_mnar_30", "lstm_mnar_10"
+)
+
+# Generate combined dataframe of coefficients
+LabeledDatasets <- mapply(DatasetIdentifiers, Datasets, DatasetNames, SIMPLIFY = FALSE)
+CombinedDF <- do.call(rbind, LabeledDatasets)
+CombinedDF <- CombinedDF[order(match(CombinedDF$Variable, balanced_panel_data_coef$Variable)), ] # Reorder
+
+# Convert to wide format
+library(tidyr)
+CoeffDF <- pivot_wider(
+  CombinedDF,
+  names_from = Dataset,
+  values_from = Coefficients
+)
+View(CoeffDF)
