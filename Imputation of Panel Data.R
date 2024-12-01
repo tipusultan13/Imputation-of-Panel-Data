@@ -948,7 +948,7 @@ amelia_unbal_mnar_10 <- Data_Imputation_Amelia(unbalanced_panel_data_mnar_10)
 
 EndTime_amelia <- Sys.time()  # Ending time
 ExecutionTime_amelia <- EndTime_amelia - StartTime_amelia
-print(ExecutionTime_amelia) # Time difference of 5.355461 hours
+print(ExecutionTime_amelia) # Time difference of 2.151062 hours
 
 ## LSTM Network ##
 ################
@@ -1051,11 +1051,11 @@ lstm_unbal_mnar_10 <- Data_Imputation_LSTM(unbalanced_panel_data_mnar_10)
 
 EndTime_LSTM <- Sys.time()  # Ending time
 ExecutionTime_LSTM <- EndTime_LSTM - StartTime_LSTM
-print(ExecutionTime_LSTM) # Time difference of 2.417554 hours
+print(ExecutionTime_LSTM) # Time difference of 2.750278 hours
 
-########################
-## Statistical Analysis
-########################
+###################################
+# Correlation Matrix Comparason #
+###################################
 
 
 
@@ -1482,6 +1482,44 @@ legend("topright",
 
 par(mfrow = c(1, 1))
 
+#############################
+# Distribution Comparason #
+#############################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ###########################
 ### Coefficients Comparison
 ###########################
@@ -1848,47 +1886,252 @@ Coeff_lstm_unbal_mnar_50
 Coeff_lstm_unbal_mnar_30
 Coeff_lstm_unbal_mnar_10'
 
-### Bias ##
-###########
+####################
+# Bias and RMSE #
+####################
+
+### Balanced Panel ###
 
 # Generate dataframe and columns
-NewColNames <- function(dataset) {
+NewColNames_Bal <- function(dataset) {
   colnames(dataset) <- c("Variable", "Coefficients")
   return(dataset)
 }
-Datasets <- lapply(all_coeff_datasets, NewColNames)
+
+AllCoeffDatasets_Bal <- list(
+  Coeff_mice_bal_mcar_50, Coeff_mice_bal_mcar_30, Coeff_mice_bal_mcar_10,
+  Coeff_mice_bal_mar_50, Coeff_mice_bal_mar_30, Coeff_mice_bal_mar_10,
+  Coeff_mice_bal_mnar_50, Coeff_mice_bal_mnar_30, Coeff_mice_bal_mnar_10,
+  Coeff_mitml_bal_mcar_50, Coeff_mitml_bal_mcar_30, Coeff_mitml_bal_mcar_10,
+  Coeff_mitml_bal_mar_50, Coeff_mitml_bal_mar_30, Coeff_mitml_bal_mar_10,
+  Coeff_mitml_bal_mnar_50, Coeff_mitml_bal_mnar_30, Coeff_mitml_bal_mnar_10,
+  Coeff_amelia_bal_mcar_50, Coeff_amelia_bal_mcar_30, Coeff_amelia_bal_mcar_10,
+  Coeff_amelia_bal_mar_50, Coeff_amelia_bal_mar_30, Coeff_amelia_bal_mar_10,
+  Coeff_amelia_bal_mnar_50, Coeff_amelia_bal_mnar_30, Coeff_amelia_bal_mnar_10,
+  Coeff_lstm_bal_mcar_50, Coeff_lstm_bal_mcar_30, Coeff_lstm_bal_mcar_10,
+  Coeff_lstm_bal_mar_50, Coeff_lstm_bal_mar_30, Coeff_lstm_bal_mar_10,
+  Coeff_lstm_bal_mnar_50, Coeff_lstm_bal_mnar_30, Coeff_lstm_bal_mnar_10
+)
+
+Datasets_Bal <- lapply(AllCoeffDatasets_Bal, NewColNames_Bal)
 
 # Add Identifiers
-DatasetIdentifiers <- function(dataset, dataset_name) {
+DatasetIdentifiers_Bal <- function(dataset, dataset_name) {
   dataset$Dataset <- dataset_name
   return(dataset)
 }
 
 # Coefficients lists
-DatasetNames <- c(
-  "mice_mcar_50", "mice_mcar_30", "mice_mcar_10",
-  "mice_mar_50", "mice_mar_30", "mice_mar_10",
-  "mice_mnar_50", "mice_mnar_30", "mice_mnar_10",
-  "mitml_mcar_50", "mitml_mcar_30", "mitml_mcar_10",
-  "mitml_mar_50", "mitml_mar_30", "mitml_mar_10",
-  "mitml_mnar_50", "mitml_mnar_30", "mitml_mnar_10",
-  "amelia_mcar_50", "amelia_mcar_30", "amelia_mcar_10",
-  "amelia_mar_50", "amelia_mar_30", "amelia_mar_10",
-  "lstm_mcar_50", "lstm_mcar_30", "lstm_mcar_10",
-  "lstm_mar_50", "lstm_mar_30", "lstm_mar_10",
-  "lstm_mnar_50", "lstm_mnar_30", "lstm_mnar_10"
+DatasetNames_Bal <- c(
+  "mice_mcar_bal_50", "mice_mcar_bal_30", "mice_mcar_bal_10",
+  "mice_mar_bal_50", "mice_mar_bal_30", "mice_mar_bal_10",
+  "mice_mnar_bal_50", "mice_mnar_bal_30", "mice_mnar_bal_10",
+  "mitml_mcar_bal_50", "mitml_mcar_bal_30", "mitml_mcar_bal_10",
+  "mitml_mar_bal_50", "mitml_mar_bal_30", "mitml_mar_bal_10",
+  "mitml_mnar_bal_50", "mitml_mnar_bal_30", "mitml_mnar_bal_10",
+  "amelia_mcar_bal_50", "amelia_mcar_bal_30", "amelia_mcar_bal_10",
+  "amelia_mar_bal_50", "amelia_mar_bal_30", "amelia_mar_bal_10",
+  "amelia_mnar_bal_50", "amelia_mnar_bal_30", "amelia_mnar_bal_10",
+  "lstm_mcar_bal_50", "lstm_mcar_bal_30", "lstm_mcar_bal_10",
+  "lstm_mar_bal_50", "lstm_mar_bal_30", "lstm_mar_bal_10",
+  "lstm_mnar_bal_50", "lstm_mnar_bal_30", "lstm_mnar_bal_10"
 )
 
 # Generate combined dataframe of coefficients
-LabeledDatasets <- mapply(DatasetIdentifiers, Datasets, DatasetNames, SIMPLIFY = FALSE)
-CombinedDF <- do.call(rbind, LabeledDatasets)
-CombinedDF <- CombinedDF[order(match(CombinedDF$Variable, balanced_panel_data_coef$Variable)), ] # Reorder
+LabeledDatasets_Bal <- mapply(DatasetIdentifiers_Bal, Datasets_Bal, DatasetNames_Bal, SIMPLIFY = FALSE)
+CombinedDF_Bal <- do.call(rbind, LabeledDatasets_Bal)
+CombinedDF_Bal <- CombinedDF_Bal[order(match(CombinedDF_Bal$Variable, balanced_panel_data_coef$Variable)), ]
 
 # Convert to wide format
-library(tidyr)
-CoeffDF <- pivot_wider(
-  CombinedDF,
+CoeffDF_Bal <- pivot_wider(
+  CombinedDF_Bal,
   names_from = Dataset,
   values_from = Coefficients
 )
-View(CoeffDF)
+head(CoeffDF_Bal)
+
+### Bias ###
+
+# Marged Coefficients from imputed datasets with the original datasets coefficients
+MergedDF_Bal <- merge(CoeffDF_Bal, balanced_panel_data_coef, by = "Variable")
+
+# Bias Calculation
+Bias_Bal <- MergedDF_Bal
+for (col in names(CoeffDF)[-1]) {  # Exclude "Variable" column
+  Bias_Bal[[col]] <- MergedDF_Bal[[col]] - MergedDF_Bal$Coefficient
+}
+
+Bias_Bal <- Bias_Bal[, !(names(Bias_Bal) %in% "Coefficient")] # Remove the column of the true coefficients
+print(Bias_Bal)
+
+# Mean bias calculation
+BiasMean_Bal <- colMeans(Bias_Bal[, -1])  # Exclude 'Variable' column
+BiasMeanDF_Bal <- data.frame(
+  Dataset = names(BiasMean_Bal),
+  MeanBias = BiasMean_Bal
+)
+
+# Ranking from the minimum to maximum values
+BiasMeanDF_Bal <- BiasMeanDF_Bal[order(BiasMeanDF_Bal$MeanBias), ]
+BiasMeanDF_Bal$Rank <- seq_len(nrow(BiasMeanDF_Bal))
+print(BiasMeanDF_Bal)
+
+# Generate new columns of the algorithm names
+BiasMeanDF_Bal <- BiasMeanDF_Bal %>%
+  mutate(Algorithm = sub("_.*", "", Dataset))
+
+# Calculation of the average bias for each algorithm for all the datasets
+AverageBias_Bal <- BiasMeanDF_Bal %>%
+  group_by(Algorithm) %>%
+  summarise(MeanBias = mean(MeanBias, na.rm = TRUE)) %>%
+  arrange(MeanBias)
+print(AverageBias_Bal)
+
+#### RMSE ####
+
+# RMSE calculation
+RMSE_Bal <- apply(Bias_Bal[, -1], 2, function(x) sqrt(mean(x^2)))  # Exclude 'Variable' column
+RMSEDF_Bal <- data.frame(
+  Dataset = names(RMSE_Bal),
+  RMSE_Bal = RMSE_Bal
+)
+
+# Rank the datasets from minimum to maximum
+RMSEDF_Bal <- RMSEDF_Bal[order(RMSEDF_Bal$RMSE_Bal), ]
+RMSEDF_Bal$Rank <- seq_len(nrow(RMSEDF_Bal))
+print(RMSEDF_Bal)
+
+# Generate new columns of the algorithm names
+RMSEDF_Bal <- RMSEDF_Bal %>%
+  mutate(Algorithm = sub("_.*", "", Dataset))
+
+# Calculation of the average RMSE for each algorithm for all the datasets
+AverageRMSE_Bal <- RMSEDF_Bal %>%
+  group_by(Algorithm) %>%
+  summarise(MeanRMSE = mean(RMSE_Bal, na.rm = TRUE)) %>%
+  arrange(MeanRMSE)
+print(AverageRMSE_Bal)
+
+### Unbalanced Panel ###
+
+# Generate dataframe and columns
+NewColNames_Unbal <- function(dataset) {
+  colnames(dataset) <- c("Variable", "Coefficients")
+  return(dataset)
+}
+
+AllCoeffDatasets_Unbal <- list(
+  Coeff_mice_unbal_mcar_50, Coeff_mice_unbal_mcar_30, Coeff_mice_unbal_mcar_10,
+  Coeff_mice_unbal_mar_50, Coeff_mice_unbal_mar_30, Coeff_mice_unbal_mar_10,
+  Coeff_mice_unbal_mnar_50, Coeff_mice_unbal_mnar_30, Coeff_mice_unbal_mnar_10,
+  Coeff_mitml_unbal_mcar_50, Coeff_mitml_unbal_mcar_30, Coeff_mitml_unbal_mcar_10,
+  Coeff_mitml_unbal_mar_50, Coeff_mitml_unbal_mar_30, Coeff_mitml_unbal_mar_10,
+  Coeff_mitml_unbal_mnar_50, Coeff_mitml_unbal_mnar_30, Coeff_mitml_unbal_mnar_10,
+  Coeff_amelia_unbal_mcar_50, Coeff_amelia_unbal_mcar_30, Coeff_amelia_unbal_mcar_10,
+  Coeff_amelia_unbal_mar_50, Coeff_amelia_unbal_mar_30, Coeff_amelia_unbal_mar_10,
+  Coeff_amelia_unbal_mnar_50, Coeff_amelia_unbal_mnar_30, Coeff_amelia_unbal_mnar_10,
+  Coeff_lstm_unbal_mcar_50, Coeff_lstm_unbal_mcar_30, Coeff_lstm_unbal_mcar_10,
+  Coeff_lstm_unbal_mar_50, Coeff_lstm_unbal_mar_30, Coeff_lstm_unbal_mar_10,
+  Coeff_lstm_unbal_mnar_50, Coeff_lstm_unbal_mnar_30, Coeff_lstm_unbal_mnar_10
+)
+
+Datasets_Unbal <- lapply(AllCoeffDatasets_Unbal, NewColNames_Unbal)
+
+# Add Identifiers
+DatasetIdentifiers_Unbal <- function(dataset, dataset_name) {
+  dataset$Dataset <- dataset_name
+  return(dataset)
+}
+
+# Coefficients lists
+DatasetNames_Unbal <- c(
+  "mice_mcar_unbal_50", "mice_mcar_unbal_30", "mice_mcar_unbal_10",
+  "mice_mar_unbal_50", "mice_mar_unbal_30", "mice_mar_unbal_10",
+  "mice_mnar_unbal_50", "mice_mnar_unbal_30", "mice_mnar_unbal_10",
+  "mitml_mcar_unbal_50", "mitml_mcar_unbal_30", "mitml_mcar_unbal_10",
+  "mitml_mar_unbal_50", "mitml_mar_unbal_30", "mitml_mar_unbal_10",
+  "mitml_mnar_unbal_50", "mitml_mnar_unbal_30", "mitml_mnar_unbal_10",
+  "amelia_mcar_unbal_50", "amelia_mcar_unbal_30", "amelia_mcar_unbal_10",
+  "amelia_mar_unbal_50", "amelia_mar_unbal_30", "amelia_mar_unbal_10",
+  "amelia_mnar_unbal_50", "amelia_mnar_unbal_30", "amelia_mnar_unbal_10",
+  "lstm_mcar_unbal_50", "lstm_mcar_unbal_30", "lstm_mcar_unbal_10",
+  "lstm_mar_unbal_50", "lstm_mar_unbal_30", "lstm_mar_unbal_10",
+  "lstm_mnar_unbal_50", "lstm_mnar_unbal_30", "lstm_mnar_unbal_10"
+)
+
+# Generate combined dataframe of coefficients
+LabeledDatasets_Unbal <- mapply(DatasetIdentifiers_Unbal, Datasets_Unbal, DatasetNames_Unbal, SIMPLIFY = FALSE)
+CombinedDF_Unbal <- do.call(rbind, LabeledDatasets_Unbal)
+CombinedDF_Unbal <- CombinedDF_Unbal[order(match(CombinedDF_Unbal$Variable, unbalanced_panel_data_coef$Variable)), ]
+
+# Convert to wide format
+CoeffDF_Unbal <- pivot_wider(
+  CombinedDF_Unbal,
+  names_from = Dataset,
+  values_from = Coefficients
+)
+head(CoeffDF_Unbal)
+
+### Bias ###
+
+# Marged Coefficients from imputed datasets with the original datasets coefficients
+MergedDF_Unbal <- merge(CoeffDF_Unbal, unbalanced_panel_data_coef, by = "Variable")
+
+# Bias Calculation
+Bias_Unbal <- MergedDF_Unbal
+for (col in names(CoeffDF_Unbal)[-1]) {  # Exclude "Variable" column
+  Bias_Unbal[[col]] <- MergedDF_Unbal[[col]] - MergedDF_Unbal$Coefficient
+}
+
+Bias_Unbal <- Bias_Unbal[, !(names(Bias_Unbal) %in% "Coefficient")] # Remove the column of the true coefficients
+print(Bias_Unbal)
+
+# Mean bias calculation
+BiasMean_Unbal <- colMeans(Bias_Unbal[, -1])  # Exclude 'Variable' column
+BiasMeanDF_Unbal <- data.frame(
+  Dataset = names(BiasMean_Unbal),
+  MeanBias = BiasMean_Unbal
+)
+
+# Ranking from the minimum to maximum values
+BiasMeanDF_Unbal <- BiasMeanDF_Unbal[order(BiasMeanDF_Unbal$MeanBias), ]
+BiasMeanDF_Unbal$Rank <- seq_len(nrow(BiasMeanDF_Unbal))
+print(BiasMeanDF_Unbal)
+
+# Generate new columns of the algorithm names
+BiasMeanDF_Unbal <- BiasMeanDF_Unbal %>%
+  mutate(Algorithm = sub("_.*", "", Dataset))
+
+# Calculation of the average bias for each algorithm for all the datasets
+AverageBias_Unbal <- BiasMeanDF_Unbal %>%
+  group_by(Algorithm) %>%
+  summarise(MeanBias = mean(MeanBias, na.rm = TRUE)) %>%
+  arrange(MeanBias)
+print(AverageBias_Unbal)
+
+#### RMSE ####
+
+# RMSE calculation
+RMSE_Unbal <- apply(Bias_Unbal[, -1], 2, function(x) sqrt(mean(x^2)))  # Exclude 'Variable' column
+RMSEDF_Unbal <- data.frame(
+  Dataset = names(RMSE_Unbal),
+  RMSE_Unbal = RMSE_Unbal
+)
+
+# Rank the datasets from minimum to maximum
+RMSEDF_Unbal <- RMSEDF_Unbal[order(RMSEDF_Unbal$RMSE_Unbal), ]
+RMSEDF_Unbal$Rank <- seq_len(nrow(RMSEDF_Unbal))
+print(RMSEDF_Unbal)
+
+# Generate new columns of the algorithm names
+RMSEDF_Unbal <- RMSEDF_Unbal %>%
+  mutate(Algorithm = sub("_.*", "", Dataset))
+
+# Calculation of the average RMSE for each algorithm for all the datasets
+AverageRMSE_Unbal <- RMSEDF_Unbal %>%
+  group_by(Algorithm) %>%
+  summarise(MeanRMSE = mean(RMSE_Unbal, na.rm = TRUE)) %>%
+  arrange(MeanRMSE)
+print(AverageRMSE_Unbal)
+
+
