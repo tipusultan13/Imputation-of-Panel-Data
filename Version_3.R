@@ -1,134 +1,146 @@
-# Assuming CoeffDF and balanced_panel_data_coef are already loaded
-
-# Merge the two data frames on the 'Variable' column
-merged_df <- merge(CoeffDF, balanced_panel_data_coef, by = "Variable")
-
-# Calculate bias by subtracting the true coefficients from each imputed column
-bias_df <- merged_df
-for (col in names(CoeffDF)[-1]) {  # Exclude 'Variable'
-  bias_df[[col]] <- merged_df[[col]] - merged_df$Coefficient
-}
-
-# Remove the true coefficient column for clarity
-bias_df <- bias_df[, !(names(bias_df) %in% "Coefficient")]
-
-# View the bias data frame
-print(bias_df)
-View(merged_df)
-
-
-
-# Calculate the mean bias for each dataset (excluding the 'Variable' column)
-mean_bias <- colMeans(bias_df[, -1])  # Exclude 'Variable' column
-
-# Create a data frame of mean bias values
-mean_bias_df <- data.frame(
-  Dataset = names(mean_bias),
-  MeanBias = mean_bias
-)
-
-# Rank the datasets by mean bias in ascending order
-mean_bias_df <- mean_bias_df[order(mean_bias_df$MeanBias), ]
-
-# Add a rank column
-mean_bias_df$Rank <- seq_len(nrow(mean_bias_df))
-
-# View the ranked mean bias data frame
-print(mean_bias_df)
-View(mean_bias_df)
-
-
-
-
-#############################
-
-
-
-# Calculate the RMSE for each dataset
-rmse <- apply(bias_df[, -1], 2, function(x) sqrt(mean(x^2)))  # Exclude 'Variable' column
-
-# Create a data frame of RMSE values
-rmse_df <- data.frame(
-  Dataset = names(rmse),
-  RMSE = rmse
-)
-
-# Rank the datasets by RMSE in ascending order
-rmse_df <- rmse_df[order(rmse_df$RMSE), ]
-
-# Add a rank column
-rmse_df$Rank <- seq_len(nrow(rmse_df))
-
-# View the ranked RMSE data frame
-print(rmse_df)
-View(rmse_df)
-
-
-
-#################################
-# Load ggplot2 package
+# Load necessary libraries
 library(ggplot2)
+library(plm)
+library(dplyr)
 
-# Boxplot to show Income dependency on MaritalStatus and Age
-ggplot(mice_imp_bal_mcar_50, aes(x = factor(MaritalStatus), y = Income, fill = factor(MaritalStatus))) +
-  geom_boxplot() +
-  facet_wrap(~ cut(Age, breaks = 4), scales = "free", ncol = 2) +
+# Convert pdata.frame to regular data.frame
+data <- as.data.frame(balanced_panel_data)
+
+# Convert pseries columns to numeric (because pseries is a special class for panel data)
+data$Age <- as.numeric(as.vector(data$Age))
+data$Income <- as.numeric(as.vector(data$Income))
+
+# Ensure MaritalStatus is a factor
+data$MaritalStatus <- factor(data$MaritalStatus, levels = c("1", "2", "3", "4"), 
+                             labels = c("Single", "Married", "Divorced", "Widowed"))
+
+# Filter data for Age between 20 and 60
+data_filtered <- data %>% filter(Age >= 20 & Age <= 60)
+
+# Plot the conditional distribution of income for the filtered age group
+ggplot(data_filtered, aes(x = Income, color = MaritalStatus, fill = MaritalStatus)) +
+  geom_density(alpha = 0.3) +  # Density plot with transparency
   labs(
-    title = "Income Distribution by Marital Status and Age Groups",
-    x = "Marital Status",
-    y = "Income",
-    fill = "Marital Status"
-  ) +
-  theme_minimal()
-
-
-
-
-# Load ggplot2 package
-library(ggplot2)
-
-# Density plot with adjusted fill based on MaritalStatus
-ggplot(mice_imp_bal_mcar_50, aes(x = Income, fill = factor(MaritalStatus))) +
-  geom_density(alpha = 0.6) +  # Adjust transparency to make overlapping clearer
-  facet_wrap(~ cut(Age, breaks = 4), scales = "free", ncol = 2) + # Facet by age group
-  labs(
-    title = "Income Distribution by Marital Status and Age Groups",
+    title = "Conditional Distribution of Income by Marital Status and Age (20-60)",
     x = "Income",
     y = "Density",
+    color = "Marital Status",
     fill = "Marital Status"
   ) +
-  theme_minimal()
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+library(ggplot2)
+library(dplyr)
+
+# Function to plot Confidence Interval Overlap with Ranking
+plot_CI_overlap <- function(BiasMeanDF, Bias_Bal, dataset_col_name = "Dataset", mean_col_name = "MeanBias") {
+  
+  # Calculate confidence intervals for each dataset
+  BiasMeanDF <- BiasMeanDF %>%
+    rowwise() %>%
+    mutate(
+      LowerCI = !!sym(mean_col_name) - qt(0.975, df = nrow(Bias_Bal) - 1) * sd(Bias_Bal[[!!sym(dataset_col_name)]], na.rm = TRUE) / sqrt(nrow(Bias_Bal)),
+      UpperCI = !!sym(mean_col_name) + qt(0.975, df = nrow(Bias_Bal) - 1) * sd(Bias_Bal[[!!sym(dataset_col_name)]], na.rm = TRUE) / sqrt(nrow(Bias_Bal))
+    ) %>%
+    ungroup()
+  
+  # Calculate the width of the confidence interval (UpperCI - LowerCI)
+  BiasMeanDF <- BiasMeanDF %>%
+    mutate(CIWidth = UpperCI - LowerCI)
+  
+  # Rank datasets by CIWidth (ascending order: smaller interval at the top)
+  BiasMeanDF <- BiasMeanDF %>%
+    arrange(CIWidth) %>%
+    mutate(Rank = row_number())
+  
+  # Create the confidence interval overlap plot with rankings
+  ggplot(BiasMeanDF, aes(x = reorder(!!sym(dataset_col_name), CIWidth), y = !!sym(mean_col_name))) +
+    geom_point(size = 3, color = "blue") +
+    geom_errorbar(aes(ymin = LowerCI, ymax = UpperCI), width = 0.2, color = "red") +
+    geom_text(aes(label = Rank), hjust = -0.5, size = 3, color = "black") +  # Add rank labels
+    coord_flip() +
+    labs(
+      title = "Confidence Interval Overlap of Mean Bias (Ranked by CI Width)",
+      x = "Dataset",
+      y = "Mean Bias"
+    ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+
+# Example Usage for Balanced Dataset (BiasMeanDF_Bal, Bias_Bal as input)
+plot_CI_overlap(BiasMeanDF_Unbal, Bias_Unbal)
 
 
 
 
 
 
+library(ggplot2)
+library(dplyr)
+
+# Function to plot RMSE comparison with confidence intervals (or standard errors)
+plot_RMSE_CI_overlap <- function(RMSEDF, dataset_col_name = "Dataset", rmse_col_name = "RMSE_Bal") {
+  
+  # Create a basic plot for RMSE comparison (no CI if not available)
+  ggplot(RMSEDF, aes(x = reorder(!!sym(dataset_col_name), !!sym(rmse_col_name)), y = !!sym(rmse_col_name))) +
+    geom_point(size = 3, color = "blue") +
+    geom_text(aes(label = Rank), hjust = -0.5, size = 3, color = "black") +  # Add rank labels
+    coord_flip() +
+    labs(
+      title = "RMSE Comparison (Ranked by RMSE)",
+      x = "Dataset",
+      y = "RMSE"
+    ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+
+# Example Usage for Balanced Dataset (RMSEDF_Bal as input)
+plot_RMSE_CI_overlap(RMSEDF_Bal)
 
 
 
+# Load the required libraries
+library(reshape2)
+library(ggplot2)
+library(pheatmap)
 
+# Define the function to generate correlation heatmaps
+create_correlation_heatmap <- function(corr_df) {
+  
+  # Step 1: Reshape the data into a long format
+  corr_df_long <- melt(corr_df, id.vars = NULL, variable.name = "Variable", value.name = "Correlation")
+  
+  # Step 2: Create the heatmap plot using ggplot2
+  ggplot(corr_df_long, aes(x = Variable, y = Variable, fill = Correlation)) +
+    geom_tile() + 
+    scale_fill_gradient2(low = "gray", high = "red", mid = "white", midpoint = 0) + 
+    theme_minimal() +
+    labs(title = "Correlation Heatmap", x = "Variable", y = "Dataset", fill = "Correlation") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    scale_x_discrete(limits = rev(levels(corr_df_long$Variable)))  # Reverse x-axis if needed
+  
+  # Step 3: Prepare the data for pheatmap
+  # Filter out non-numeric columns
+  corr_df_numeric <- corr_df[, sapply(corr_df, is.numeric)]
+  
+  # Convert the dataframe into a matrix for pheatmap
+  corr_df_matrix <- as.matrix(corr_df_numeric)
+  
+  # Step 4: Create the heatmap using pheatmap
+  pheatmap(corr_df_matrix, 
+           color = colorRampPalette(c("gray", "white", "red"))(50), 
+           clustering_distance_rows = "euclidean", 
+           clustering_distance_cols = "euclidean", 
+           clustering_method = "complete", 
+           display_numbers = TRUE, 
+           main = "Correlation Heatmap")
+}
 
+# Example usage with the balanced correlation data
+create_correlation_heatmap(CorrDF_Bal)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# Example usage with unbalanced data
+create_correlation_heatmap(CorrDF_Unbal)

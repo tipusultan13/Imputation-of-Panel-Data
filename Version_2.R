@@ -22,13 +22,15 @@ library(lmtest)
 library(Amelia)
 library(keras)
 library(plm)
-library(dplyr)
+library(tidyr)
 
 # Load and clean the data
 RawData <- readRDS("population.RDS")
 RawData = data.frame(RawData)
-data = RawData[c("PID", "year", "EF44", "erwerbstyp", "inc.ind", "EF49", "vollzeit", "EF310", "EF46")]
-colnames(data) <- c("ID", "Year", "Age", "EmploymentTypes", "IndividualIncome", "MaritalStatus", "EmploymentHours", "Education", "Sex")
+data = RawData[c("PID", "year", "EF44", "erwerbstyp", "inc.ind", "EF49", 
+                 "vollzeit", "EF310", "EF46")]
+colnames(data) <- c("ID", "Year", "Age", "EmploymentTypes", "IndividualIncome", 
+                    "MaritalStatus", "EmploymentHours", "Education", "Sex")
 summary(data)
 
 # 'ID'
@@ -593,11 +595,12 @@ aggr(unbalanced_panel_data_mar_10,
 #### MNAR ####
 ##############
 
+#### Probabilistic, Linear Regression model ####
 #### 50% ####
 
 p_mis_50 <- .50
 unbalanced_panel_data_mnar_50 <- unbalanced_panel_data
-# the missing of a value now also depends on IndividualIncome itself
+# the missing of a value now also depends on Income itself
 mis_simulated_mnar_50 <- 0.5 + 0.1 * unbalanced_panel_data_mnar_50$EmploymentTypes + 
   0.2 * unbalanced_panel_data_mnar_50$Age + 
   0.5 * unbalanced_panel_data_mnar_50$Income + rnorm(nrow(unbalanced_panel_data), 0, 3)
@@ -619,7 +622,7 @@ aggr(unbalanced_panel_data_mnar_50,
 
 p_mis_30 <- .30
 unbalanced_panel_data_mnar_30 <- unbalanced_panel_data
-# the missing of a value now also depends on IndividualIncome itself
+# the missing of a value now also depends on Income itself
 mis_simulated_mnar_30 <-0.7 + 0.1 * unbalanced_panel_data_mnar_30$EmploymentTypes + 
   0.2 * unbalanced_panel_data_mnar_30$Age + 
   0.5 * unbalanced_panel_data_mnar_30$Income + rnorm(nrow(unbalanced_panel_data), 0, 3)
@@ -641,7 +644,7 @@ aggr(unbalanced_panel_data_mnar_30,
 
 p_mis_10 <- .10
 unbalanced_panel_data_mnar_10 <- unbalanced_panel_data
-# the missing of a value now also depends on IndividualIncome itself
+# the missing of a value now also depends on Income itself
 mis_simulated_mnar_10 <- 0.1 + 0.1 * unbalanced_panel_data_mnar_10$EmploymentTypes + 
   0.2 * unbalanced_panel_data_mnar_10$Age + 
   0.5 * unbalanced_panel_data_mnar_10$Income + rnorm(nrow(unbalanced_panel_data), 0, 3)
@@ -801,7 +804,7 @@ mice_unbal_mnar_10 <- Data_Imputation_mice(unbalanced_panel_data_mnar_10)
 
 EndTime_mice <- Sys.time()  # Ending time
 ExecutionTime_mice <- EndTime_mice - StartTime_mice
-print(ExecutionTime_mice) # Time difference of 13.70923 mins
+print(ExecutionTime_mice) # Time difference of 13.11498 mins
 
 ## mitml ##
 ###########
@@ -888,7 +891,7 @@ mitml_unbal_mnar_10 <- Data_Imputation_mitml_Unbal(unbalanced_panel_data_mnar_10
 
 EndTime_mitml <- Sys.time()  # Ending time
 ExecutionTime_mitml <- EndTime_mitml - StartTime_mitml
-print(ExecutionTime_mitml) # Time difference of 25.28873 mins
+print(ExecutionTime_mitml) # Time difference of 25.23591 mins
 
 
 ## amelia
@@ -948,7 +951,7 @@ amelia_unbal_mnar_10 <- Data_Imputation_Amelia(unbalanced_panel_data_mnar_10)
 
 EndTime_amelia <- Sys.time()  # Ending time
 ExecutionTime_amelia <- EndTime_amelia - StartTime_amelia
-print(ExecutionTime_amelia) # Time difference of 2.151062 hours
+print(ExecutionTime_amelia) # Time difference of 2.38555 hours
 
 ## LSTM Network ##
 ################
@@ -1051,17 +1054,7 @@ lstm_unbal_mnar_10 <- Data_Imputation_LSTM(unbalanced_panel_data_mnar_10)
 
 EndTime_LSTM <- Sys.time()  # Ending time
 ExecutionTime_LSTM <- EndTime_LSTM - StartTime_LSTM
-print(ExecutionTime_LSTM) # Time difference of 2.750278 hours
-
-########################
-## Statistical Analysis
-########################
-
-
-
-
-
-
+print(ExecutionTime_LSTM) # Time difference of 2.409152 hours
 
 #############################
 # Distribution Comparason #
@@ -1106,15 +1099,15 @@ IncDist_mice <- function(data, col){
   lines(DataTemp_mice, col = col, lwd = 2)
 }
 
+### Balanced data
+
 DataTemp_mice <- density(balanced_panel_data$Income, na.rm = TRUE)
 par(mfrow = c(2, 3))
 plot(DataTemp_mice, 
-     main = "Income Distributions from mice - Balanced panel (MNAR)", 
+     main = "Balanced panel (MNAR)", 
      xlab = "Income", 
      ylab = "Density",
      lwd = 2, col = "black")
-
-### Balanced data
 
 IncDist_mice(mice_imp_bal_mcar_50, "blue")
 IncDist_mice(mice_imp_bal_mcar_30, "red")
@@ -1147,7 +1140,7 @@ legend("topright",
 
 DataTemp_mice <- density(unbalanced_panel_data$Income, na.rm = TRUE)
 plot(DataTemp_mice, 
-     main = "Income Distributions from mice - Unbalanced panel (MNAR)", 
+     main = "Unbalanced panel (MNAR)", 
      xlab = "Income", 
      ylab = "Density",
      lwd = 2, col = "black")
@@ -1220,14 +1213,15 @@ IncDist_mitml <- function(data, col) {
   lines(DataTemp_mitml, col = col, lwd = 2)
 }
 
+# Balanced Data
+
 DataTemp_mitml <- density(balanced_panel_data$Income, na.rm = TRUE)
 plot(DataTemp_mitml, 
-     main = "Income Distributions from mitml - Balanced panel (MNAR)", 
+     main = "Balanced panel (MNAR)", 
      xlab = "Income", 
      ylab = "Density",
      lwd = 2, col = "black")
 
-# Balanced Data
 IncDist_mitml(mitml_imp_bal_mcar_50, "blue")
 IncDist_mitml(mitml_imp_bal_mcar_30, "red")
 IncDist_mitml(mitml_imp_bal_mcar_10, "green")
@@ -1259,7 +1253,7 @@ legend("topright",
 
 DataTemp_mitml <- density(unbalanced_panel_data$Income, na.rm = TRUE)
 plot(DataTemp_mitml, 
-     main = "Income Distributions from mitml - Unbalanced Panel (MNAR)", 
+     main = "Unbalanced Panel (MNAR)", 
      xlab = "Income", 
      ylab = "Density",
      lwd = 2, col = "black")
@@ -1334,7 +1328,7 @@ IncDist_amelia <- function(data, col) {
 # Balanced Panel
 DataTemp_amelia <- density(balanced_panel_data$Income, na.rm = TRUE)
 plot(DataTemp_amelia, 
-     main = "Income Distributions from Amelia - Balanced Panel (MNAR)", 
+     main = "Balanced Panel (MNAR)", 
      xlab = "Income", 
      ylab = "Density",
      lwd = 2, col = "black")
@@ -1369,7 +1363,7 @@ legend("topright",
 # Unbalanced Panel
 DataTemp_amelia <- density(unbalanced_panel_data$Income, na.rm = TRUE)
 plot(DataTemp_amelia, 
-     main = "Income Distributions from Amelia - Unbalanced Panel (MNAR)", 
+     main = "Unbalanced Panel (MNAR)", 
      xlab = "Income", 
      ylab = "Density",
      lwd = 2, col = "black")
@@ -1413,7 +1407,7 @@ IncDist_LSTM <- function(data, col) {
 # Balanced Panel
 DataTemp_LSTM <- density(balanced_panel_data$Income, na.rm = TRUE)
 plot(DataTemp_LSTM, 
-     main = "Income Distributions from LSTM - Balanced Panel (MNAR)", 
+     main = "Balanced Panel (MNAR)", 
      xlab = "Income", 
      ylab = "Density",
      lwd = 2, col = "black")
@@ -1448,7 +1442,7 @@ legend("topright",
 # Unbalanced Panel
 DataTemp_LSTM <- density(unbalanced_panel_data$Income, na.rm = TRUE)
 plot(DataTemp_LSTM, 
-     main = "Income Distributions from LSTM - Unbalanced Panel (MNAR)", 
+     main = "Unbalanced Panel (MNAR)", 
      xlab = "Income", 
      ylab = "Density",
      lwd = 2, col = "black")
@@ -1481,6 +1475,170 @@ legend("topright",
        cex = 0.8)
 
 par(mfrow = c(1, 1))
+
+#######################################
+# Conditional Distribution Comparason #
+#######################################
+
+
+
+
+
+
+
+
+
+
+
+
+###################################
+# Correlation Matrix Comparason #
+###################################
+
+### Balanced Panel ###
+
+# MargedDataframe
+MargedDataframe_Bal <- list(
+  mice_imp_bal_mcar_50 = mice_imp_bal_mcar_50,
+  mice_imp_bal_mcar_30 = mice_imp_bal_mcar_30,
+  mice_imp_bal_mcar_10 = mice_imp_bal_mcar_10,
+  mice_imp_bal_mar_50 = mice_imp_bal_mar_50,
+  mice_imp_bal_mar_30 = mice_imp_bal_mar_30,
+  mice_imp_bal_mar_10 = mice_imp_bal_mar_10,
+  mice_imp_bal_mnar_50 = mice_imp_bal_mnar_50,
+  mice_imp_bal_mnar_30 = mice_imp_bal_mnar_30,
+  mice_imp_bal_mnar_10 = mice_imp_bal_mnar_10,
+  mitml_imp_bal_mcar_50 = mitml_imp_bal_mcar_50,
+  mitml_imp_bal_mcar_30 = mitml_imp_bal_mcar_30,
+  mitml_imp_bal_mcar_10 = mitml_imp_bal_mcar_10,
+  mitml_imp_bal_mar_50 = mitml_imp_bal_mar_50,
+  mitml_imp_bal_mar_30 = mitml_imp_bal_mar_30,
+  mitml_imp_bal_mar_10 = mitml_imp_bal_mar_10,
+  mitml_imp_bal_mnar_50 = mitml_imp_bal_mnar_50,
+  mitml_imp_bal_mnar_30 = mitml_imp_bal_mnar_30,
+  mitml_imp_bal_mnar_10 = mitml_imp_bal_mnar_10,
+  amelia_imp_bal_mcar_50 = amelia_imp_bal_mcar_50,
+  amelia_imp_bal_mcar_30 = amelia_imp_bal_mcar_30,
+  amelia_imp_bal_mcar_10 = amelia_imp_bal_mcar_10,
+  amelia_imp_bal_mar_50 = amelia_imp_bal_mar_50,
+  amelia_imp_bal_mar_30 = amelia_imp_bal_mar_30,
+  amelia_imp_bal_mar_10 = amelia_imp_bal_mar_10,
+  amelia_imp_bal_mnar_50 = amelia_imp_bal_mnar_50,
+  amelia_imp_bal_mnar_30 = amelia_imp_bal_mnar_30,
+  amelia_imp_bal_mnar_10 = amelia_imp_bal_mnar_10,
+  lstm_bal_mcar_50 = lstm_bal_mcar_50,
+  lstm_bal_mcar_30 = lstm_bal_mcar_30,
+  lstm_bal_mcar_10 = lstm_bal_mcar_10,
+  lstm_bal_mar_50 = lstm_bal_mar_50,
+  lstm_bal_mar_30 = lstm_bal_mar_30,
+  lstm_bal_mar_10 = lstm_bal_mar_10,
+  lstm_bal_mnar_50 = lstm_bal_mnar_50,
+  lstm_bal_mnar_30 = lstm_bal_mnar_30,
+  lstm_bal_mnar_10 = lstm_bal_mnar_10
+)
+
+MargedDataframe_Bal[["RealBalancedPanel"]] <- balanced_panel_data # Add the RealBalancedPanel to the MargedDataframe_Bal
+
+CorrDF_Bal <- data.frame() # Empty dataframe to store the results
+
+# Calculate correlations
+for (Names in names(MargedDataframe_Bal)) {
+  dataset <- MargedDataframe_Bal[[Names]]
+  
+  dataset <- dataset[, !colnames(dataset) %in% c("ID", "Year")] # remove ID and Year
+  
+  # convert categorical columns by implementing dummy encoding
+  dataset <- data.frame(lapply(dataset, function(x) {
+    if (is.factor(x) || is.character(x)) {
+      as.numeric(as.factor(x))
+    } else {
+      x  # Keep Age, Income unchanged
+    }
+  }))
+  
+  # Calculate correlations without Income
+  correlations <- cor(dataset, use = "pairwise.complete.obs")[, "Income"]
+  correlations <- correlations[!names(correlations) %in% "Income"] # Exclude Income vs Income
+  CorrDF_Bal <- rbind(CorrDF_Bal, correlations)
+}
+
+rownames(CorrDF_Bal) <- names(MargedDataframe_Bal) # Add row names
+colnames(CorrDF_Bal) <- names(correlations) # Add column names
+CorrDF_Bal
+View(CorrDF_Bal)
+
+### Unbalanced Panel ###
+
+# MargedDataframe
+MargedDataframe_Unbal <- list(
+  mice_imp_unbal_mcar_50 = mice_imp_unbal_mcar_50,
+  mice_imp_unbal_mcar_30 = mice_imp_unbal_mcar_30,
+  mice_imp_unbal_mcar_10 = mice_imp_unbal_mcar_10,
+  mice_imp_unbal_mar_50 = mice_imp_unbal_mar_50,
+  mice_imp_unbal_mar_30 = mice_imp_unbal_mar_30,
+  mice_imp_unbal_mar_10 = mice_imp_unbal_mar_10,
+  mice_imp_unbal_mnar_50 = mice_imp_unbal_mnar_50,
+  mice_imp_unbal_mnar_30 = mice_imp_unbal_mnar_30,
+  mice_imp_unbal_mnar_10 = mice_imp_bal_mnar_10,
+  mitml_imp_unbal_mcar_50 = mitml_imp_unbal_mcar_50,
+  mitml_imp_unbal_mcar_30 = mitml_imp_unbal_mcar_30,
+  mitml_imp_unbal_mcar_10 = mitml_imp_unbal_mcar_10,
+  mitml_imp_unbal_mar_50 = mitml_imp_unbal_mar_50,
+  mitml_imp_unbal_mar_30 = mitml_imp_unbal_mar_30,
+  mitml_imp_unbal_mar_10 = mitml_imp_unbal_mar_10,
+  mitml_imp_unbal_mnar_50 = mitml_imp_unbal_mnar_50,
+  mitml_imp_unbal_mnar_30 = mitml_imp_unbal_mnar_30,
+  mitml_imp_unbal_mnar_10 = mitml_imp_unbal_mnar_10,
+  amelia_imp_unbal_mcar_50 = amelia_imp_unbal_mcar_50,
+  amelia_imp_unbal_mcar_30 = amelia_imp_unbal_mcar_30,
+  amelia_imp_unbal_mcar_10 = amelia_imp_unbal_mcar_10,
+  amelia_imp_unbal_mar_50 = amelia_imp_unbal_mar_50,
+  amelia_imp_unbal_mar_30 = amelia_imp_unbal_mar_30,
+  amelia_imp_unbal_mar_10 = amelia_imp_unbal_mar_10,
+  amelia_imp_unbal_mnar_50 = amelia_imp_unbal_mnar_50,
+  amelia_imp_unbal_mnar_30 = amelia_imp_unbal_mnar_30,
+  amelia_imp_unbal_mnar_10 = amelia_imp_unbal_mnar_10,
+  lstm_unbal_mcar_50 = lstm_unbal_mcar_50,
+  lstm_unbal_mcar_30 = lstm_unbal_mcar_30,
+  lstm_unbal_mcar_10 = lstm_unbal_mcar_10,
+  lstm_unbal_mar_50 = lstm_unbal_mar_50,
+  lstm_unbal_mar_30 = lstm_unbal_mar_30,
+  lstm_unbal_mar_10 = lstm_unbal_mar_10,
+  lstm_unbal_mnar_50 = lstm_unbal_mnar_50,
+  lstm_unbal_mnar_30 = lstm_unbal_mnar_30,
+  lstm_unbal_mnar_10 = lstm_unbal_mnar_10
+)
+
+MargedDataframe_Unbal[["RealUnbalancedPanel"]] <- balanced_panel_data # Add the RealBalancedPanel to the MargedDataframe_Unbal
+
+CorrDF_Unbal <- data.frame() # Empty dataframe to store the results
+
+# Calculate correlations
+for (Names in names(MargedDataframe_Unbal)) {
+  dataset <- MargedDataframe_Unbal[[Names]]
+  
+  dataset <- dataset[, !colnames(dataset) %in% c("ID", "Year")] # remove ID and Year
+  
+  # convert categorical columns by implementing dummy encoding
+  dataset <- data.frame(lapply(dataset, function(x) {
+    if (is.factor(x) || is.character(x)) {
+      as.numeric(as.factor(x))
+    } else {
+      x  # Keep Age, Income unchanged
+    }
+  }))
+  
+  # Calculate correlations without Income
+  correlations <- cor(dataset, use = "pairwise.complete.obs")[, "Income"]
+  correlations <- correlations[!names(correlations) %in% "Income"] # Exclude Income vs Income
+  CorrDF_Unbal <- rbind(CorrDF_Unbal, correlations)
+}
+
+rownames(CorrDF_Unbal) <- names(MargedDataframe_Unbal) # Add row names
+colnames(CorrDF_Unbal) <- names(correlations) # Add column names
+CorrDF_Unbal
+View(CorrDF_Unbal)
+
 
 ###########################
 ### Coefficients Comparison
@@ -1848,7 +2006,8 @@ Coeff_lstm_unbal_mnar_50
 Coeff_lstm_unbal_mnar_30
 Coeff_lstm_unbal_mnar_10'
 
-### Bias and RMSE ##
+####################
+# Bias and RMSE #
 ####################
 
 ### Balanced Panel ###
@@ -1918,7 +2077,7 @@ MergedDF_Bal <- merge(CoeffDF_Bal, balanced_panel_data_coef, by = "Variable")
 
 # Bias Calculation
 Bias_Bal <- MergedDF_Bal
-for (col in names(CoeffDF)[-1]) {  # Exclude "Variable" column
+for (col in names(CoeffDF_Bal)[-1]) {  # Exclude "Variable" column
   Bias_Bal[[col]] <- MergedDF_Bal[[col]] - MergedDF_Bal$Coefficient
 }
 
@@ -1950,7 +2109,6 @@ print(AverageBias_Bal)
 
 #### RMSE ####
 
-# RMSE calculation
 RMSE_Bal <- apply(Bias_Bal[, -1], 2, function(x) sqrt(mean(x^2)))  # Exclude 'Variable' column
 RMSEDF_Bal <- data.frame(
   Dataset = names(RMSE_Bal),
@@ -2071,8 +2229,6 @@ AverageBias_Unbal <- BiasMeanDF_Unbal %>%
 print(AverageBias_Unbal)
 
 #### RMSE ####
-
-# RMSE calculation
 RMSE_Unbal <- apply(Bias_Unbal[, -1], 2, function(x) sqrt(mean(x^2)))  # Exclude 'Variable' column
 RMSEDF_Unbal <- data.frame(
   Dataset = names(RMSE_Unbal),
@@ -2094,3 +2250,4 @@ AverageRMSE_Unbal <- RMSEDF_Unbal %>%
   summarise(MeanRMSE = mean(RMSE_Unbal, na.rm = TRUE)) %>%
   arrange(MeanRMSE)
 print(AverageRMSE_Unbal)
+
