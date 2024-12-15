@@ -23,6 +23,8 @@ library(Amelia)
 library(keras)
 library(plm)
 library(tidyr)
+library(reshape2)
+library(pheatmap)
 
 # Load and clean the data
 RawData <- readRDS("population.RDS")
@@ -1639,6 +1641,38 @@ colnames(CorrDF_Unbal) <- names(correlations) # Add column names
 CorrDF_Unbal
 View(CorrDF_Unbal)
 
+# Function to generate correlation Heatmap 
+CorrelationHeatmap <- function(corr_df) {
+  
+  CorrDFLong <- melt(corr_df, id.vars = NULL, variable.name = "Variable", value.name = "Correlation") # Reshape long format
+  
+  # Create heatmap
+  ggplot(CorrDFLong, aes(x = Variable, y = Variable, fill = Correlation)) +
+    geom_tile() + 
+    scale_fill_gradient2(low = "gray", high = "red", mid = "white", midpoint = 0) + 
+    theme_minimal() +
+    labs(title = "", x = "Variable", y = "Dataset", fill = "Correlation") +
+    theme(axis.text.x = element_text(angle = 40, hjust = 1)) +
+    scale_x_discrete(limits = rev(levels(CorrDFLong$Variable)))  # Reverse x-axis if needed
+  
+  CorrDFNumeric <- corr_df[, sapply(corr_df, is.numeric)] # Non numeric column generation
+  
+  CorrDFMatrix <- as.matrix(CorrDFNumeric) # Convert the dataframe into a matrix (easier for pheatmap)
+  
+  pheatmap(CorrDFMatrix, 
+           color = colorRampPalette(c("gray", "white", "red"))(50), 
+           clustering_distance_rows = "euclidean", 
+           clustering_distance_cols = "euclidean", 
+           clustering_method = "complete", 
+           display_numbers = TRUE, 
+           main = "")
+}
+
+
+CorrelationHeatmap(CorrDF_Bal)
+
+CorrelationHeatmap(CorrDF_Unbal)
+
 
 ###########################
 ### Coefficients Comparison
@@ -2251,3 +2285,67 @@ AverageRMSE_Unbal <- RMSEDF_Unbal %>%
   arrange(MeanRMSE)
 print(AverageRMSE_Unbal)
 
+
+#### Confidence Interval Overlap with Ranking ####
+CI_Overlap <- function(BiasMeanDF, Bias_Bal, dataset_col_name = "Dataset", mean_col_name = "MeanBias") {
+  
+  # Calculate confidence interval
+  BiasMeanDF <- BiasMeanDF %>%
+    rowwise() %>%
+    mutate(
+      LowerCI = !!sym(mean_col_name) - qt(0.975, df = nrow(Bias_Bal) - 1) * sd(Bias_Bal[[!!sym(dataset_col_name)]], na.rm = TRUE) / sqrt(nrow(Bias_Bal)),
+      UpperCI = !!sym(mean_col_name) + qt(0.975, df = nrow(Bias_Bal) - 1) * sd(Bias_Bal[[!!sym(dataset_col_name)]], na.rm = TRUE) / sqrt(nrow(Bias_Bal))
+    ) %>%
+    ungroup()
+  
+  # Calculate the width and rank of the confidence interval
+  BiasMeanDF <- BiasMeanDF %>%
+    mutate(CIWidth = UpperCI - LowerCI)
+  
+  BiasMeanDF <- BiasMeanDF %>%
+    arrange(CIWidth) %>%
+    mutate(Rank = row_number())
+  
+  # Create the confidence interval overlap plot with rankings
+  ggplot(BiasMeanDF, aes(x = reorder(!!sym(dataset_col_name), CIWidth), y = !!sym(mean_col_name))) +
+    geom_point(size = 3, color = "blue") +
+    geom_errorbar(aes(ymin = LowerCI, ymax = UpperCI), width = 0.2, color = "red") +
+    geom_text(aes(label = Rank), hjust = -0.5, size = 3, color = "black") +  # Add rank labels
+    coord_flip() +
+    labs(
+      title = "Confidence Interval Overlap of Mean Bias (Ranked by CI Width)",
+      x = "Dataset",
+      y = "Mean Bias"
+    ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 40, hjust = 1))
+}
+
+CI_Overlap(BiasMeanDF_Bal, Bias_Bal)
+CI_Overlap(BiasMeanDF_Unbal, Bias_Unbal)
+
+##### Plot RMSE Histograms ####
+
+RMSE_Histogram <- function(RMSEDF, rmse_column) {
+  
+  RMSEDF <- RMSEDF %>%
+    mutate(Dataset = as.factor(Dataset), 
+           RMSE = as.numeric(get(rmse_column)))
+  
+  # Create the vertical bar chart
+  ggplot(RMSEDF, aes(y = reorder(Dataset, RMSE), x = RMSE, fill = Algorithm)) +
+    geom_bar(stat = "identity") +
+    geom_text(aes(label = round(RMSE, 3)), hjust = -0.2, size = 3) +
+    scale_x_continuous(expand = expansion(mult = c(0, 0.1))) +
+    labs(title = "RMSE of Imputed Datasets Across Algorithms",
+         x = "RMSE",
+         y = "Dataset") +
+    theme_minimal() +
+    theme(axis.text.y = element_text(size = 8),
+          legend.position = "bottom",
+          legend.title = element_blank())
+}
+
+
+RMSE_Histogram(RMSEDF_Bal, "RMSE_Bal")
+RMSE_Histogram(RMSEDF_Unbal, "RMSE_Unbal")
