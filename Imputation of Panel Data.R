@@ -236,6 +236,13 @@ summary(unbalanced_panel_data)
 ## Simulate Missingness in Balanced Panel
 #########################################
 
+CTable <- cor(balanced_panel_data[, c("Income", "Age", "EmploymentTypes")], use = "complete.obs")
+print(CTable)
+
+CTable <- cor(unbalanced_panel_data[, c("Income", "Age", "EmploymentTypes")], use = "complete.obs")
+print(CTable)
+
+
 #### MCAR ####
 ##############
 
@@ -306,9 +313,9 @@ set.seed(123)
 p_mis_50 <- 0.5  # 50% missingness
 
 # Depending on EmploymentTypes, Age, and random error
-mis_simulated_mar_50 <- 0.5 + 0.1 * balanced_panel_data_mar_50$EmploymentTypes + 
-  0.2 * balanced_panel_data_mar_50$Age + 
-  rnorm(nrow(balanced_panel_data_mar_50), 0, 3)
+mis_simulated_mar_50 <- 0.5 -.07 * balanced_panel_data_mar_50$EmploymentTypes + 
+  0.004* balanced_panel_data_mar_50$Age + 
+  rnorm(nrow(balanced_panel_data_mar_50), 0, 1)
 
 mis_simulated_mar_50 <- mis_simulated_mar_50 < quantile(mis_simulated_mar_50, p_mis_50) # All below the 50% quantile are set to missing
 mean(as.numeric(mis_simulated_mar_50))
@@ -333,9 +340,9 @@ set.seed(123)
 p_mis_50 <- 0.3  # 30% missingness
 
 # Depending on EmploymentTypes, Age, and random error
-mis_simulated_mar_30 <- 0.7 + 0.1 * balanced_panel_data_mar_30$EmploymentTypes + 
-  0.2 * balanced_panel_data_mar_30$Age + 
-  rnorm(nrow(balanced_panel_data_mar_30), 0, 3)
+mis_simulated_mar_30 <- .5 - .07 * balanced_panel_data_mar_30$EmploymentTypes + 
+  0.004 * balanced_panel_data_mar_30$Age + 
+  rnorm(nrow(balanced_panel_data_mar_30), 0, 1)
 
 mis_simulated_mar_30 <- mis_simulated_mar_30 < quantile(mis_simulated_mar_30, p_mis_30) # All below the 50% quantile are set to missing
 mean(as.numeric(mis_simulated_mar_30))
@@ -359,9 +366,9 @@ set.seed(123)
 p_mis_50 <- 0.1  # 10% missingness
 
 # Depending on EmploymentTypes, Age, and random error
-mis_simulated_mar_10 <- 0.1 + 0.1 * balanced_panel_data_mar_10$EmploymentTypes + 
-  0.2 * balanced_panel_data_mar_10$Age + 
-  rnorm(nrow(balanced_panel_data_mar_10), 0, 3)
+mis_simulated_mar_10 <- .5 - .07 * balanced_panel_data_mar_10$EmploymentTypes + 
+  0.004 * balanced_panel_data_mar_10$Age + 
+  rnorm(nrow(balanced_panel_data_mar_10), 0, 1)
 
 mis_simulated_mar_10 <- mis_simulated_mar_10 < quantile(mis_simulated_mar_10, p_mis_10) # All below the 50% quantile are set to missing
 mean(as.numeric(mis_simulated_mar_10))
@@ -387,9 +394,9 @@ aggr(balanced_panel_data_mar_10,
 p_mis_50 <- .50
 balanced_panel_data_mnar_50 <- balanced_panel_data
 # the missing of a value now also depends on Income itself
-mis_simulated_mnar_50 <- 0.5 + .2 * balanced_panel_data_mnar_50$EmploymentTypes + 
-  0.1 * balanced_panel_data_mnar_50$Age + 
-  0.5 * balanced_panel_data_mnar_50$Income + rnorm(nrow(balanced_panel_data), 0, 3)
+mis_simulated_mnar_50 <- .5 -.07 * balanced_panel_data_mnar_50$EmploymentTypes + 
+  0.004 * balanced_panel_data_mnar_50$Age + 
+  .1 * balanced_panel_data_mnar_50$Income + rnorm(nrow(balanced_panel_data), 0, 1)
 mis_simulated_mnar_50 <- mis_simulated_mnar_50 < quantile(mis_simulated_mnar_50, p_mis_50)
 balanced_panel_data_mnar_50$Income[mis_simulated_mnar_50] <- NA
 summary(balanced_panel_data_mnar_50)
@@ -409,9 +416,9 @@ aggr(balanced_panel_data_mnar_50,
 p_mis_30 <- .30
 balanced_panel_data_mnar_30 <- balanced_panel_data
 # the missing of a value now also depends on Income itself
-mis_simulated_mnar_30 <- 0.7 + 0.1 * balanced_panel_data_mnar_30$EmploymentTypes + 
-  0.2 * balanced_panel_data_mnar_30$Age + 
-  0.5 * balanced_panel_data_mnar_30$Income + rnorm(nrow(balanced_panel_data), 0, 3)
+mis_simulated_mnar_30 <- .5 -.07 * balanced_panel_data_mnar_30$EmploymentTypes + 
+  0.004 * balanced_panel_data_mnar_30$Age + 
+  .1 * balanced_panel_data_mnar_30$Income + rnorm(nrow(balanced_panel_data), 0, 1)
 mis_simulated_mnar_30 <- mis_simulated_mnar_30 < quantile(mis_simulated_mnar_30, p_mis_30)
 balanced_panel_data_mnar_30$Income[mis_simulated_mnar_30] <- NA
 summary(balanced_panel_data_mnar_30)
@@ -431,9 +438,9 @@ aggr(balanced_panel_data_mnar_30,
 p_mis_10 <- .10
 balanced_panel_data_mnar_10 <- balanced_panel_data
 # the missing of a value now also depends on Income itself
-mis_simulated_mnar_10 <- 0.1 + 0.1 * balanced_panel_data_mnar_10$EmploymentTypes + 
-  0.2 * balanced_panel_data_mnar_10$Age + 
-  0.5 * balanced_panel_data_mnar_10$Income + rnorm(nrow(balanced_panel_data), 0, 3)
+mis_simulated_mnar_10 <- .5 -.07 * balanced_panel_data_mnar_10$EmploymentTypes + 
+  0.004 * balanced_panel_data_mnar_10$Age + 
+  .1 * balanced_panel_data_mnar_10$Income + rnorm(nrow(balanced_panel_data), 0, 1)
 mis_simulated_mnar_10 <- mis_simulated_mnar_10 < quantile(mis_simulated_mnar_10, p_mis_10)
 balanced_panel_data_mnar_10$Income[mis_simulated_mnar_10] <- NA
 summary(balanced_panel_data_mnar_10)
@@ -521,9 +528,9 @@ set.seed(123)
 p_mis_50 <- 0.5  # 50% missingness
 
 # Depending on EmploymentTypes, Age, and random error
-mis_simulated_mar_50 <- 0.5 + 0.1 * unbalanced_panel_data_mar_50$EmploymentTypes + 
-  0.2 * unbalanced_panel_data_mar_50$Age + 
-  rnorm(nrow(unbalanced_panel_data_mar_50), 0, 3)
+mis_simulated_mar_50 <- .5 -.07 * unbalanced_panel_data_mar_50$EmploymentTypes + 
+  0.002 * unbalanced_panel_data_mar_50$Age + 
+  rnorm(nrow(unbalanced_panel_data_mar_50), 0, 1)
 
 mis_simulated_mar_50 <- mis_simulated_mar_50 < quantile(mis_simulated_mar_50, p_mis_50) # All below the 50% quantile are set to missing
 mean(as.numeric(mis_simulated_mar_50))
@@ -547,9 +554,9 @@ set.seed(123)
 p_mis_50 <- 0.3  # 30% missingness
 
 # Depending on EmploymentTypes, Age, and random error
-mis_simulated_mar_30 <- 0.7 + 0.1 * unbalanced_panel_data_mar_30$EmploymentTypes + 
-  0.2 * unbalanced_panel_data_mar_30$Age + 
-  rnorm(nrow(unbalanced_panel_data_mar_30), 0, 3)
+mis_simulated_mar_30 <- .5 -.07 * unbalanced_panel_data_mar_30$EmploymentTypes + 
+  0.002 * unbalanced_panel_data_mar_30$Age + 
+  rnorm(nrow(unbalanced_panel_data_mar_30), 0, 1)
 
 mis_simulated_mar_30 <- mis_simulated_mar_30 < quantile(mis_simulated_mar_30, p_mis_30) # All below the 50% quantile are set to missing
 mean(as.numeric(mis_simulated_mar_30))
@@ -574,9 +581,9 @@ set.seed(123)
 p_mis_50 <- 0.1  # 10% missingness
 
 # Depending on EmploymentTypes, Age, and random error
-mis_simulated_mar_10 <- 0.1 + 0.1 * unbalanced_panel_data_mar_10$EmploymentTypes + 
-  0.2 * unbalanced_panel_data_mar_10$Age + 
-  rnorm(nrow(unbalanced_panel_data_mar_10), 0, 3)
+mis_simulated_mar_10 <- .5 -.07* unbalanced_panel_data_mar_10$EmploymentTypes + 
+  0.002 * unbalanced_panel_data_mar_10$Age + 
+  rnorm(nrow(unbalanced_panel_data_mar_10), 0, 1)
 
 mis_simulated_mar_10 <- mis_simulated_mar_10 < quantile(mis_simulated_mar_10, p_mis_10) # All below the 50% quantile are set to missing
 mean(as.numeric(mis_simulated_mar_10))
@@ -603,9 +610,9 @@ aggr(unbalanced_panel_data_mar_10,
 p_mis_50 <- .50
 unbalanced_panel_data_mnar_50 <- unbalanced_panel_data
 # the missing of a value now also depends on Income itself
-mis_simulated_mnar_50 <- 0.5 + 0.1 * unbalanced_panel_data_mnar_50$EmploymentTypes + 
-  0.2 * unbalanced_panel_data_mnar_50$Age + 
-  0.5 * unbalanced_panel_data_mnar_50$Income + rnorm(nrow(unbalanced_panel_data), 0, 3)
+mis_simulated_mnar_50 <- .5 -.07 * unbalanced_panel_data_mnar_50$EmploymentTypes + 
+  0.002 * unbalanced_panel_data_mnar_50$Age + 
+  .1 * unbalanced_panel_data_mnar_50$Income + rnorm(nrow(unbalanced_panel_data), 0, 1)
 mis_simulated_mnar_50 <- mis_simulated_mnar_50 < quantile(mis_simulated_mnar_50, p_mis_50)
 unbalanced_panel_data_mnar_50$Income[mis_simulated_mnar_50] <- NA
 summary(unbalanced_panel_data_mnar_50)
@@ -625,9 +632,9 @@ aggr(unbalanced_panel_data_mnar_50,
 p_mis_30 <- .30
 unbalanced_panel_data_mnar_30 <- unbalanced_panel_data
 # the missing of a value now also depends on Income itself
-mis_simulated_mnar_30 <-0.7 + 0.1 * unbalanced_panel_data_mnar_30$EmploymentTypes + 
-  0.2 * unbalanced_panel_data_mnar_30$Age + 
-  0.5 * unbalanced_panel_data_mnar_30$Income + rnorm(nrow(unbalanced_panel_data), 0, 3)
+mis_simulated_mnar_30 <- .5 -.07 * unbalanced_panel_data_mnar_30$EmploymentTypes + 
+  0.002 * unbalanced_panel_data_mnar_30$Age + 
+  .1 * unbalanced_panel_data_mnar_30$Income + rnorm(nrow(unbalanced_panel_data), 0, 1)
 mis_simulated_mnar_30 <- mis_simulated_mnar_30 < quantile(mis_simulated_mnar_30, p_mis_30)
 unbalanced_panel_data_mnar_30$Income[mis_simulated_mnar_30] <- NA
 summary(unbalanced_panel_data_mnar_30)
@@ -647,9 +654,9 @@ aggr(unbalanced_panel_data_mnar_30,
 p_mis_10 <- .10
 unbalanced_panel_data_mnar_10 <- unbalanced_panel_data
 # the missing of a value now also depends on Income itself
-mis_simulated_mnar_10 <- 0.1 + 0.1 * unbalanced_panel_data_mnar_10$EmploymentTypes + 
-  0.2 * unbalanced_panel_data_mnar_10$Age + 
-  0.5 * unbalanced_panel_data_mnar_10$Income + rnorm(nrow(unbalanced_panel_data), 0, 3)
+mis_simulated_mnar_10 <- .5 -.07 * unbalanced_panel_data_mnar_10$EmploymentTypes + 
+  0.002 * unbalanced_panel_data_mnar_10$Age + 
+  .1 * unbalanced_panel_data_mnar_10$Income + rnorm(nrow(unbalanced_panel_data), 0, 1)
 mis_simulated_mnar_10 <- mis_simulated_mnar_10 < quantile(mis_simulated_mnar_10, p_mis_10)
 unbalanced_panel_data_mnar_10$Income[mis_simulated_mnar_10] <- NA
 summary(unbalanced_panel_data_mnar_10)
@@ -767,14 +774,14 @@ Data_Imputation_mice <- function(data, IDColumn = "ID", TargetColumn = "Income",
   PredMat[, IDColumn] <- 0 # Remove ID from the list of predictors
   PredMat[, ] <- 0
   PredMat[colnames(PredMat) %in% c("lag_EmploymentTypes", "lag_MaritalStatus", 
-                                           "lag_Sex", "lag_Income", "Age"), TargetColumn] <- 1
+                                   "lag_Sex", "lag_Income", "Age"), TargetColumn] <- 1
   
   ImputedData <- mice(data, m = m, maxit = maxit, method = method, predictorMatrix = PredMat) # Implement mice
   
   # Get the original rows and the imputed Income
   CompletedData <- lapply(1:m, function(i) complete(ImputedData, action = i))
   OriginalColumns <- c("ID", "Year", "Age", "EmploymentTypes", "Income", "MaritalStatus", 
-                     "EmploymentHours", "Education", "Sex")
+                       "EmploymentHours", "Education", "Sex")
   CompletedData <- lapply(CompletedData, function(df) df[, OriginalColumns])
   return(CompletedData)
 }
@@ -806,7 +813,7 @@ mice_unbal_mnar_10 <- Data_Imputation_mice(unbalanced_panel_data_mnar_10)
 
 EndTime_mice <- Sys.time()  # Ending time
 ExecutionTime_mice <- EndTime_mice - StartTime_mice
-print(ExecutionTime_mice) # Time difference of 13.11498 mins
+print(ExecutionTime_mice) # Time difference of 15.55183 mins
 
 ## mitml ##
 ###########
@@ -1069,7 +1076,7 @@ miceData <- function(data) {
   CombinedData <- do.call(rbind, data)
   return(CombinedData)
 }
- 
+
 # Data Combination
 mice_imp_bal_mcar_50 <- miceData(mice_bal_mcar_50)
 mice_imp_bal_mcar_30 <- miceData(mice_bal_mcar_30)
@@ -1104,7 +1111,7 @@ IncDist_mice <- function(data, col){
 ### Balanced data
 
 DataTemp_mice <- density(balanced_panel_data$Income, na.rm = TRUE)
-par(mfrow = c(2, 3))
+par(mfrow = c(3, 2))
 plot(DataTemp_mice, 
      main = "Balanced panel (MNAR)", 
      xlab = "Income", 
@@ -1292,7 +1299,7 @@ legend("topright",
 
 # Data Combination
 ameliaData <- function(data){
-
+  
   CombinedData <- do.call(rbind, data)
   return(CombinedData)
 }
@@ -1691,7 +1698,7 @@ ModelSelection <- function(data) {
     # Hausman test to check the type of panel effect
     RandomEffectModel <- plm(Income ~ Age + EmploymentTypes + MaritalStatus + Education + Sex, data = data, model = "random")
     FixedEffectModel <- plm(Income ~ Age + EmploymentTypes + MaritalStatus + Education + Sex, data = data, model = "within") # Check this one
-
+    
     HausmanTest <- phtest(FixedEffectModel, RandomEffectModel)
     
     if (HausmanTest$p.value <= 0.05) {
@@ -1738,7 +1745,7 @@ mice_Coff <- function(mice_imp) {
     # Fitting the model and extracting coefficients
     FixedEffectModel <- plm(Income ~ Age + EmploymentTypes + MaritalStatus + EmploymentHours + Education + Sex, data = pdata, model = "within")
     Coefficients <- coef(FixedEffectModel)
-
+    
     CoList[[i]] <- Coefficients
   }
   
