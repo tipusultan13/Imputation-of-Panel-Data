@@ -236,6 +236,13 @@ summary(unbalanced_panel_data)
 ## Simulate Missingness in Balanced Panel
 #########################################
 
+CTable <- cor(balanced_panel_data[, c("Income", "Age", "EmploymentTypes")], use = "complete.obs")
+print(CTable)
+
+CTable <- cor(unbalanced_panel_data[, c("Income", "Age", "EmploymentTypes")], use = "complete.obs")
+print(CTable)
+
+
 #### MCAR ####
 ##############
 
@@ -306,8 +313,8 @@ set.seed(123)
 p_mis_50 <- 0.5  # 50% missingness
 
 # Depending on EmploymentTypes, Age, and random error
-mis_simulated_mar_50 <- 0.5 + 0.1 * balanced_panel_data_mar_50$EmploymentTypes + 
-  0.2 * balanced_panel_data_mar_50$Age + 
+mis_simulated_mar_50 <- 0.5 -.07 * balanced_panel_data_mar_50$EmploymentTypes + 
+  0.004* balanced_panel_data_mar_50$Age + 
   rnorm(nrow(balanced_panel_data_mar_50), 0, 1)
 
 mis_simulated_mar_50 <- mis_simulated_mar_50 < quantile(mis_simulated_mar_50, p_mis_50) # All below the 50% quantile are set to missing
@@ -333,8 +340,8 @@ set.seed(123)
 p_mis_50 <- 0.3  # 30% missingness
 
 # Depending on EmploymentTypes, Age, and random error
-mis_simulated_mar_30 <- 0.7 + 0.1 * balanced_panel_data_mar_30$EmploymentTypes + 
-  0.2 * balanced_panel_data_mar_30$Age + 
+mis_simulated_mar_30 <- .5 - .07 * balanced_panel_data_mar_30$EmploymentTypes + 
+  0.004 * balanced_panel_data_mar_30$Age + 
   rnorm(nrow(balanced_panel_data_mar_30), 0, 1)
 
 mis_simulated_mar_30 <- mis_simulated_mar_30 < quantile(mis_simulated_mar_30, p_mis_30) # All below the 50% quantile are set to missing
@@ -359,8 +366,8 @@ set.seed(123)
 p_mis_50 <- 0.1  # 10% missingness
 
 # Depending on EmploymentTypes, Age, and random error
-mis_simulated_mar_10 <- 0.1 + 0.1 * balanced_panel_data_mar_10$EmploymentTypes + 
-  0.2 * balanced_panel_data_mar_10$Age + 
+mis_simulated_mar_10 <- .5 - .07 * balanced_panel_data_mar_10$EmploymentTypes + 
+  0.004 * balanced_panel_data_mar_10$Age + 
   rnorm(nrow(balanced_panel_data_mar_10), 0, 1)
 
 mis_simulated_mar_10 <- mis_simulated_mar_10 < quantile(mis_simulated_mar_10, p_mis_10) # All below the 50% quantile are set to missing
@@ -387,9 +394,9 @@ aggr(balanced_panel_data_mar_10,
 p_mis_50 <- .50
 balanced_panel_data_mnar_50 <- balanced_panel_data
 # the missing of a value now also depends on Income itself
-mis_simulated_mnar_50 <- 0.5 + .2 * balanced_panel_data_mnar_50$EmploymentTypes + 
-  0.1 * balanced_panel_data_mnar_50$Age + 
-  0.5 * balanced_panel_data_mnar_50$Income + rnorm(nrow(balanced_panel_data), 0, 1)
+mis_simulated_mnar_50 <- .5 -.07 * balanced_panel_data_mnar_50$EmploymentTypes + 
+  0.004 * balanced_panel_data_mnar_50$Age + 
+  .1 * balanced_panel_data_mnar_50$Income + rnorm(nrow(balanced_panel_data), 0, 1)
 mis_simulated_mnar_50 <- mis_simulated_mnar_50 < quantile(mis_simulated_mnar_50, p_mis_50)
 balanced_panel_data_mnar_50$Income[mis_simulated_mnar_50] <- NA
 summary(balanced_panel_data_mnar_50)
@@ -409,9 +416,9 @@ aggr(balanced_panel_data_mnar_50,
 p_mis_30 <- .30
 balanced_panel_data_mnar_30 <- balanced_panel_data
 # the missing of a value now also depends on Income itself
-mis_simulated_mnar_30 <- 0.7 + 0.1 * balanced_panel_data_mnar_30$EmploymentTypes + 
-  0.2 * balanced_panel_data_mnar_30$Age + 
-  0.5 * balanced_panel_data_mnar_30$Income + rnorm(nrow(balanced_panel_data), 0, 1)
+mis_simulated_mnar_30 <- .5 -.07 * balanced_panel_data_mnar_30$EmploymentTypes + 
+  0.004 * balanced_panel_data_mnar_30$Age + 
+  .1 * balanced_panel_data_mnar_30$Income + rnorm(nrow(balanced_panel_data), 0, 1)
 mis_simulated_mnar_30 <- mis_simulated_mnar_30 < quantile(mis_simulated_mnar_30, p_mis_30)
 balanced_panel_data_mnar_30$Income[mis_simulated_mnar_30] <- NA
 summary(balanced_panel_data_mnar_30)
@@ -431,9 +438,9 @@ aggr(balanced_panel_data_mnar_30,
 p_mis_10 <- .10
 balanced_panel_data_mnar_10 <- balanced_panel_data
 # the missing of a value now also depends on Income itself
-mis_simulated_mnar_10 <- 0.1 + 0.1 * balanced_panel_data_mnar_10$EmploymentTypes + 
-  0.2 * balanced_panel_data_mnar_10$Age + 
-  0.5 * balanced_panel_data_mnar_10$Income + rnorm(nrow(balanced_panel_data), 0, 1)
+mis_simulated_mnar_10 <- .5 -.07 * balanced_panel_data_mnar_10$EmploymentTypes + 
+  0.004 * balanced_panel_data_mnar_10$Age + 
+  .1 * balanced_panel_data_mnar_10$Income + rnorm(nrow(balanced_panel_data), 0, 1)
 mis_simulated_mnar_10 <- mis_simulated_mnar_10 < quantile(mis_simulated_mnar_10, p_mis_10)
 balanced_panel_data_mnar_10$Income[mis_simulated_mnar_10] <- NA
 summary(balanced_panel_data_mnar_10)
@@ -521,8 +528,8 @@ set.seed(123)
 p_mis_50 <- 0.5  # 50% missingness
 
 # Depending on EmploymentTypes, Age, and random error
-mis_simulated_mar_50 <- 0.5 + 0.1 * unbalanced_panel_data_mar_50$EmploymentTypes + 
-  0.2 * unbalanced_panel_data_mar_50$Age + 
+mis_simulated_mar_50 <- .5 -.07 * unbalanced_panel_data_mar_50$EmploymentTypes + 
+  0.002 * unbalanced_panel_data_mar_50$Age + 
   rnorm(nrow(unbalanced_panel_data_mar_50), 0, 1)
 
 mis_simulated_mar_50 <- mis_simulated_mar_50 < quantile(mis_simulated_mar_50, p_mis_50) # All below the 50% quantile are set to missing
@@ -547,8 +554,8 @@ set.seed(123)
 p_mis_50 <- 0.3  # 30% missingness
 
 # Depending on EmploymentTypes, Age, and random error
-mis_simulated_mar_30 <- 0.7 + 0.1 * unbalanced_panel_data_mar_30$EmploymentTypes + 
-  0.2 * unbalanced_panel_data_mar_30$Age + 
+mis_simulated_mar_30 <- .5 -.07 * unbalanced_panel_data_mar_30$EmploymentTypes + 
+  0.002 * unbalanced_panel_data_mar_30$Age + 
   rnorm(nrow(unbalanced_panel_data_mar_30), 0, 1)
 
 mis_simulated_mar_30 <- mis_simulated_mar_30 < quantile(mis_simulated_mar_30, p_mis_30) # All below the 50% quantile are set to missing
@@ -574,8 +581,8 @@ set.seed(123)
 p_mis_50 <- 0.1  # 10% missingness
 
 # Depending on EmploymentTypes, Age, and random error
-mis_simulated_mar_10 <- 0.1 + 0.1 * unbalanced_panel_data_mar_10$EmploymentTypes + 
-  0.2 * unbalanced_panel_data_mar_10$Age + 
+mis_simulated_mar_10 <- .5 -.07* unbalanced_panel_data_mar_10$EmploymentTypes + 
+  0.002 * unbalanced_panel_data_mar_10$Age + 
   rnorm(nrow(unbalanced_panel_data_mar_10), 0, 1)
 
 mis_simulated_mar_10 <- mis_simulated_mar_10 < quantile(mis_simulated_mar_10, p_mis_10) # All below the 50% quantile are set to missing
@@ -603,9 +610,9 @@ aggr(unbalanced_panel_data_mar_10,
 p_mis_50 <- .50
 unbalanced_panel_data_mnar_50 <- unbalanced_panel_data
 # the missing of a value now also depends on Income itself
-mis_simulated_mnar_50 <- 0.5 + 0.1 * unbalanced_panel_data_mnar_50$EmploymentTypes + 
-  0.2 * unbalanced_panel_data_mnar_50$Age + 
-  0.5 * unbalanced_panel_data_mnar_50$Income + rnorm(nrow(unbalanced_panel_data), 0, 1)
+mis_simulated_mnar_50 <- .5 -.07 * unbalanced_panel_data_mnar_50$EmploymentTypes + 
+  0.002 * unbalanced_panel_data_mnar_50$Age + 
+  .1 * unbalanced_panel_data_mnar_50$Income + rnorm(nrow(unbalanced_panel_data), 0, 1)
 mis_simulated_mnar_50 <- mis_simulated_mnar_50 < quantile(mis_simulated_mnar_50, p_mis_50)
 unbalanced_panel_data_mnar_50$Income[mis_simulated_mnar_50] <- NA
 summary(unbalanced_panel_data_mnar_50)
@@ -625,9 +632,9 @@ aggr(unbalanced_panel_data_mnar_50,
 p_mis_30 <- .30
 unbalanced_panel_data_mnar_30 <- unbalanced_panel_data
 # the missing of a value now also depends on Income itself
-mis_simulated_mnar_30 <-0.7 + 0.1 * unbalanced_panel_data_mnar_30$EmploymentTypes + 
-  0.2 * unbalanced_panel_data_mnar_30$Age + 
-  0.5 * unbalanced_panel_data_mnar_30$Income + rnorm(nrow(unbalanced_panel_data), 0, 1)
+mis_simulated_mnar_30 <- .5 -.07 * unbalanced_panel_data_mnar_30$EmploymentTypes + 
+  0.002 * unbalanced_panel_data_mnar_30$Age + 
+  .1 * unbalanced_panel_data_mnar_30$Income + rnorm(nrow(unbalanced_panel_data), 0, 1)
 mis_simulated_mnar_30 <- mis_simulated_mnar_30 < quantile(mis_simulated_mnar_30, p_mis_30)
 unbalanced_panel_data_mnar_30$Income[mis_simulated_mnar_30] <- NA
 summary(unbalanced_panel_data_mnar_30)
@@ -647,9 +654,9 @@ aggr(unbalanced_panel_data_mnar_30,
 p_mis_10 <- .10
 unbalanced_panel_data_mnar_10 <- unbalanced_panel_data
 # the missing of a value now also depends on Income itself
-mis_simulated_mnar_10 <- 0.1 + 0.1 * unbalanced_panel_data_mnar_10$EmploymentTypes + 
-  0.2 * unbalanced_panel_data_mnar_10$Age + 
-  0.5 * unbalanced_panel_data_mnar_10$Income + rnorm(nrow(unbalanced_panel_data), 0, 1)
+mis_simulated_mnar_10 <- .5 -.07 * unbalanced_panel_data_mnar_10$EmploymentTypes + 
+  0.002 * unbalanced_panel_data_mnar_10$Age + 
+  .1 * unbalanced_panel_data_mnar_10$Income + rnorm(nrow(unbalanced_panel_data), 0, 1)
 mis_simulated_mnar_10 <- mis_simulated_mnar_10 < quantile(mis_simulated_mnar_10, p_mis_10)
 unbalanced_panel_data_mnar_10$Income[mis_simulated_mnar_10] <- NA
 summary(unbalanced_panel_data_mnar_10)
@@ -806,7 +813,7 @@ mice_unbal_mnar_10 <- Data_Imputation_mice(unbalanced_panel_data_mnar_10)
 
 EndTime_mice <- Sys.time()  # Ending time
 ExecutionTime_mice <- EndTime_mice - StartTime_mice
-print(ExecutionTime_mice) # Time difference of 13.11498 mins
+print(ExecutionTime_mice) # Time difference of 15.55183 mins
 
 ## mitml ##
 ###########
@@ -1104,7 +1111,7 @@ IncDist_mice <- function(data, col){
 ### Balanced data
 
 DataTemp_mice <- density(balanced_panel_data$Income, na.rm = TRUE)
-par(mfrow = c(2, 3))
+par(mfrow = c(3, 2))
 plot(DataTemp_mice, 
      main = "Balanced panel (MNAR)", 
      xlab = "Income", 
@@ -1216,7 +1223,7 @@ IncDist_mitml <- function(data, col) {
 }
 
 # Balanced Data
-
+par(mfrow = c(3, 2))
 DataTemp_mitml <- density(balanced_panel_data$Income, na.rm = TRUE)
 plot(DataTemp_mitml, 
      main = "Balanced panel (MNAR)", 
@@ -1539,7 +1546,7 @@ MargedDataframe_Bal <- list(
   lstm_bal_mnar_10 = lstm_bal_mnar_10
 )
 
-MargedDataframe_Bal[["RealBalancedPanel"]] <- balanced_panel_data # Add the RealBalancedPanel to the MargedDataframe_Bal
+MargedDataframe_Bal[["balanced_panel_data"]] <- balanced_panel_data # Add the RealBalancedPanel to the MargedDataframe_Bal
 
 CorrDF_Bal <- data.frame() # Empty dataframe to store the results
 
@@ -1568,6 +1575,23 @@ rownames(CorrDF_Bal) <- names(MargedDataframe_Bal) # Add row names
 colnames(CorrDF_Bal) <- names(correlations) # Add column names
 CorrDF_Bal
 View(CorrDF_Bal)
+
+
+CorrDF_Bal <- CorrDF_Bal %>%
+  mutate(Package = case_when(
+    grepl("^mice", rownames(CorrDF_Bal)) ~ "mice",
+    grepl("^mitml", rownames(CorrDF_Bal)) ~ "mitml",
+    grepl("^amelia", rownames(CorrDF_Bal)) ~ "amelia",
+    grepl("^lstm", rownames(CorrDF_Bal)) ~ "lstm",
+    TRUE ~ "OriginalData"
+  ))
+
+# Rank the rows based on the package names
+CorrDFBal_ranked <- CorrDF_Bal %>%
+  arrange(Package)
+
+# View the new ranked dataframe
+View(CorrDFBal_ranked)
 
 ### Unbalanced Panel ###
 
@@ -1611,7 +1635,7 @@ MargedDataframe_Unbal <- list(
   lstm_unbal_mnar_10 = lstm_unbal_mnar_10
 )
 
-MargedDataframe_Unbal[["RealUnbalancedPanel"]] <- balanced_panel_data # Add the RealBalancedPanel to the MargedDataframe_Unbal
+MargedDataframe_Unbal[["unbalanced_panel_data"]] <- unbalanced_panel_data # Add the RealBalancedPanel to the MargedDataframe_Unbal
 
 CorrDF_Unbal <- data.frame() # Empty dataframe to store the results
 
@@ -1641,37 +1665,23 @@ colnames(CorrDF_Unbal) <- names(correlations) # Add column names
 CorrDF_Unbal
 View(CorrDF_Unbal)
 
-# Function to generate correlation Heatmap 
-CorrelationHeatmap <- function(corr_df) {
-  
-  CorrDFLong <- melt(corr_df, id.vars = NULL, variable.name = "Variable", value.name = "Correlation") # Reshape long format
-  
-  # Create heatmap
-  ggplot(CorrDFLong, aes(x = Variable, y = Variable, fill = Correlation)) +
-    geom_tile() + 
-    scale_fill_gradient2(low = "gray", high = "red", mid = "white", midpoint = 0) + 
-    theme_minimal() +
-    labs(title = "", x = "Variable", y = "Dataset", fill = "Correlation") +
-    theme(axis.text.x = element_text(angle = 40, hjust = 1)) +
-    scale_x_discrete(limits = rev(levels(CorrDFLong$Variable)))  # Reverse x-axis if needed
-  
-  CorrDFNumeric <- corr_df[, sapply(corr_df, is.numeric)] # Non numeric column generation
-  
-  CorrDFMatrix <- as.matrix(CorrDFNumeric) # Convert the dataframe into a matrix (easier for pheatmap)
-  
-  pheatmap(CorrDFMatrix, 
-           color = colorRampPalette(c("gray", "white", "red"))(50), 
-           clustering_distance_rows = "euclidean", 
-           clustering_distance_cols = "euclidean", 
-           clustering_method = "complete", 
-           display_numbers = TRUE, 
-           main = "")
-}
 
+CorrDF_Unbal <- CorrDF_Unbal %>%
+  mutate(Package = case_when(
+    grepl("^mice", rownames(CorrDF_Unbal)) ~ "mice",
+    grepl("^mitml", rownames(CorrDF_Unbal)) ~ "mitml",
+    grepl("^amelia", rownames(CorrDF_Unbal)) ~ "amelia",
+    grepl("^lstm", rownames(CorrDF_Unbal)) ~ "lstm",
+    TRUE ~ "OriginalData"
+  ))
 
-CorrelationHeatmap(CorrDF_Bal)
+# Rank the rows based on the package names
+CorrDFUnbal_ranked <- CorrDF_Unbal %>%
+  arrange(Package)
 
-CorrelationHeatmap(CorrDF_Unbal)
+# View the new ranked dataframe
+View(CorrDFUnbal_ranked)
+
 
 
 ###########################

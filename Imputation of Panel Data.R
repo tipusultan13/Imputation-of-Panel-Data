@@ -1102,85 +1102,6 @@ mice_imp_unbal_mnar_50 <- miceData(mice_unbal_mnar_50)
 mice_imp_unbal_mnar_30 <- miceData(mice_unbal_mnar_30)
 mice_imp_unbal_mnar_10 <- miceData(mice_unbal_mnar_10)
 
-# plot distribution
-IncDist_mice <- function(data, col){
-  DataTemp_mice <- density(data$Income, na.rm = TRUE)
-  lines(DataTemp_mice, col = col, lwd = 2)
-}
-
-### Balanced data
-
-DataTemp_mice <- density(balanced_panel_data$Income, na.rm = TRUE)
-par(mfrow = c(3, 2))
-plot(DataTemp_mice, 
-     main = "Balanced panel (MNAR)", 
-     xlab = "Income", 
-     ylab = "Density",
-     lwd = 2, col = "black")
-
-IncDist_mice(mice_imp_bal_mcar_50, "blue")
-IncDist_mice(mice_imp_bal_mcar_30, "red")
-IncDist_mice(mice_imp_bal_mcar_10, "green")
-legend("topright", 
-       legend = c("Initial Data", "bal_mcar_50", "bal_mcar_30", "bal_mcar_10"),
-       col = c("black", "blue", "red", "green"),
-       lwd = 2,
-       cex = 0.8)
-
-IncDist_mice(mice_imp_bal_mar_50, "blue")
-IncDist_mice(mice_imp_bal_mar_30, "red")
-IncDist_mice(mice_imp_bal_mar_10, "green")
-legend("topright", 
-       legend = c("Initial Data", "bal_mar_50", "bal_mar_30", "bal_mar_10"),
-       col = c("black", "blue", "red", "green"),
-       lwd = 2,
-       cex = 0.8)
-
-IncDist_mice(mice_imp_bal_mnar_50, "blue")
-IncDist_mice(mice_imp_bal_mnar_30, "red")
-IncDist_mice(mice_imp_bal_mnar_10, "green")
-legend("topright", 
-       legend = c("Initial Data", "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
-       col = c("black", "blue", "red", "green"),
-       lwd = 2,
-       cex = 0.8)
-
-### Unbalanced data
-
-DataTemp_mice <- density(unbalanced_panel_data$Income, na.rm = TRUE)
-plot(DataTemp_mice, 
-     main = "Unbalanced panel (MNAR)", 
-     xlab = "Income", 
-     ylab = "Density",
-     lwd = 2, col = "black")
-
-IncDist_mice(mice_imp_unbal_mcar_50, "blue")
-IncDist_mice(mice_imp_unbal_mcar_30, "red")
-IncDist_mice(mice_imp_unbal_mcar_10, "green")
-legend("topright", 
-       legend = c("Initial Data", "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10"),
-       col = c("black", "blue", "red", "green"),
-       lwd = 2,
-       cex = 0.8)
-
-IncDist_mice(mice_imp_unbal_mar_50, "blue")
-IncDist_mice(mice_imp_unbal_mar_30, "red")
-IncDist_mice(mice_imp_unbal_mar_10, "green")
-legend("topright", 
-       legend = c("Initial Data","unbal_mar_50", "unbal_mar_30", "unbal_mar_10"),
-       col = c("black", "blue", "red", "green"),
-       lwd = 2,
-       cex = 0.8)
-
-IncDist_mice(mice_imp_unbal_mnar_50, "blue")
-IncDist_mice(mice_imp_unbal_mnar_30, "red")
-IncDist_mice(mice_imp_unbal_mnar_10, "green")
-legend("topright", 
-       legend = c("Initial Data", "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
-       col = c("black", "blue", "red", "green"),
-       lwd = 2,
-       cex = 0.8)
-
 ##### mitml #####
 ################
 
@@ -1216,84 +1137,6 @@ mitml_imp_unbal_mnar_50 <- mitmlData(mitml_unbal_mnar_50)
 mitml_imp_unbal_mnar_30 <- mitmlData(mitml_unbal_mnar_30)
 mitml_imp_unbal_mnar_10 <- mitmlData(mitml_unbal_mnar_10)
 
-### Plot Distribution
-IncDist_mitml <- function(data, col) {
-  DataTemp_mitml <- density(data$Income, na.rm = TRUE)
-  lines(DataTemp_mitml, col = col, lwd = 2)
-}
-
-# Balanced Data
-
-DataTemp_mitml <- density(balanced_panel_data$Income, na.rm = TRUE)
-plot(DataTemp_mitml, 
-     main = "Balanced panel (MNAR)", 
-     xlab = "Income", 
-     ylab = "Density",
-     lwd = 2, col = "black")
-
-IncDist_mitml(mitml_imp_bal_mcar_50, "blue")
-IncDist_mitml(mitml_imp_bal_mcar_30, "red")
-IncDist_mitml(mitml_imp_bal_mcar_10, "green")
-legend("topright", 
-       legend = c("Initial Data", "bal_mcar_50", "bal_mcar_30", "bal_mcar_10"),
-       col = c("black", "blue", "red", "green"),
-       lwd = 2,
-       cex = 0.8)
-
-IncDist_mitml(mitml_imp_bal_mar_50, "blue")
-IncDist_mitml(mitml_imp_bal_mar_30, "red")
-IncDist_mitml(mitml_imp_bal_mar_10, "green")
-legend("topright", 
-       legend = c("Initial Data", "bal_mar_50", "bal_mar_30", "bal_mar_10"),
-       col = c("black","blue", "red", "green"),
-       lwd = 2,
-       cex = 0.8)
-
-IncDist_mitml(mitml_imp_bal_mnar_50, "blue")
-IncDist_mitml(mitml_imp_bal_mnar_30, "red")
-IncDist_mitml(mitml_imp_bal_mnar_10, "green")
-legend("topright", 
-       legend = c("Initial Data", "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
-       col = c("black", "blue", "red", "green"),
-       lwd = 2,
-       cex = 0.8)
-
-### Unbalanced
-
-DataTemp_mitml <- density(unbalanced_panel_data$Income, na.rm = TRUE)
-plot(DataTemp_mitml, 
-     main = "Unbalanced Panel (MNAR)", 
-     xlab = "Income", 
-     ylab = "Density",
-     lwd = 2, col = "black")
-
-IncDist_mitml(mitml_imp_unbal_mcar_50, "blue")
-IncDist_mitml(mitml_imp_unbal_mcar_30, "red")
-IncDist_mitml(mitml_imp_unbal_mcar_10, "green")
-legend("topright", 
-       legend = c("Initial Data", "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10"),
-       col = c("black", "blue", "red", "green"),
-       lwd = 2,
-       cex = 0.8)
-
-IncDist_mitml(mitml_imp_unbal_mar_50, "blue")
-IncDist_mitml(mitml_imp_unbal_mar_30, "red")
-IncDist_mitml(mitml_imp_unbal_mar_10, "green")
-legend("topright", 
-       legend = c("Initial Data", "unbal_mar_50", "unbal_mar_30", "unbal_mar_10"),
-       col = c("black", "blue", "red", "green"),
-       lwd = 2,
-       cex = 0.8)
-
-IncDist_mitml(mitml_imp_unbal_mnar_50, "blue")
-IncDist_mitml(mitml_imp_unbal_mnar_30, "red")
-IncDist_mitml(mitml_imp_unbal_mnar_10, "green")
-legend("topright", 
-       legend = c("Initial Data", "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
-       col = c("black", "blue", "red", "green"),
-       lwd = 2,
-       cex = 0.8)
-
 ### amelia ###
 ##############
 
@@ -1328,160 +1171,177 @@ amelia_imp_unbal_mnar_50 <- ameliaData(amelia_unbal_mnar_50)
 amelia_imp_unbal_mnar_30 <- ameliaData(amelia_unbal_mnar_30)
 amelia_imp_unbal_mnar_10 <- ameliaData(amelia_unbal_mnar_10)
 
-# Plot Distribution
-IncDist_amelia <- function(data, col) {
-  DataTemp_amelia <- density(data$Income, na.rm = TRUE)
-  lines(DataTemp_amelia, col = col, lwd = 2)
+
+par(mfrow = c(3, 2))
+
+### Balanced Panel Comparisons ###
+
+DisttributionComparisionBal <- function(data_list, colors, title) {
+  plot(density(balanced_panel_data$Income, na.rm = TRUE), 
+       main = title, xlab = "Income", ylab = "Density", 
+       lwd = 2, col = "black")
+  for (i in 1:length(data_list)) {
+    lines(density(data_list[[i]]$Income, na.rm = TRUE), col = colors[i], lwd = 2)
+  }
+  legend("topright", 
+         legend = c("balanced_panel_data", "mice", "amelia", "mitml", "lstm"), 
+         col = c("black", colors), 
+         lwd = 2, cex = 1)
 }
 
-# Balanced Panel
-DataTemp_amelia <- density(balanced_panel_data$Income, na.rm = TRUE)
-plot(DataTemp_amelia, 
-     main = "Balanced Panel (MNAR)", 
-     xlab = "Income", 
-     ylab = "Density",
-     lwd = 2, col = "black")
+# Define data and colors
+colors <- c("blue", "red", "green", "purple")
 
-IncDist_amelia(amelia_imp_bal_mcar_50, "blue")
-IncDist_amelia(amelia_imp_bal_mcar_30, "red")
-IncDist_amelia(amelia_imp_bal_mcar_10, "green")
-legend("topright", 
-       legend = c("Initial Data", "bal_mcar_50", "bal_mcar_30", "bal_mcar_10"),
-       col = c("black", "blue", "red", "green"),
-       lwd = 2,
-       cex = 0.8)
+###### MCAR ##### 
+# 10% missingness
+DisttributionComparisionBal(
+  list(mice_imp_bal_mcar_10, amelia_imp_bal_mcar_10, mitml_imp_bal_mcar_10, lstm_bal_mcar_10),
+  colors,
+  "Balanced Panel - MCAR 10%"
+)
 
-IncDist_amelia(amelia_imp_bal_mar_50, "blue")
-IncDist_amelia(amelia_imp_bal_mar_30, "red")
-IncDist_amelia(amelia_imp_bal_mar_10, "green")
-legend("topright", 
-       legend = c("Initial Data","bal_mar_50", "bal_mar_30", "bal_mar_10"),
-       col = c("black", "blue", "red", "green"),
-       lwd = 2,
-       cex = 0.8)
+# 30% missingness
+DisttributionComparisionBal(
+  list(mice_imp_bal_mcar_30, amelia_imp_bal_mcar_30, mitml_imp_bal_mcar_30, lstm_bal_mcar_30),
+  colors,
+  "Balanced Panel - MCAR 30%"
+)
 
-IncDist_amelia(amelia_imp_bal_mnar_50, "blue")
-IncDist_amelia(amelia_imp_bal_mnar_30, "red")
-IncDist_amelia(amelia_imp_bal_mnar_10, "green")
-legend("topright", 
-       legend = c("Initial Data", "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
-       col = c("black", "blue", "red", "green"),
-       lwd = 2,
-       cex = 0.8)
+# 50% missingness
+DisttributionComparisionBal(
+  list(mice_imp_bal_mcar_50, amelia_imp_bal_mcar_50, mitml_imp_bal_mcar_50, lstm_bal_mcar_50),
+  colors,
+  "Balanced Panel - MCAR 50%"
+)
 
-# Unbalanced Panel
-DataTemp_amelia <- density(unbalanced_panel_data$Income, na.rm = TRUE)
-plot(DataTemp_amelia, 
-     main = "Unbalanced Panel (MNAR)", 
-     xlab = "Income", 
-     ylab = "Density",
-     lwd = 2, col = "black")
+##### MAR #####
 
-IncDist_amelia(amelia_imp_unbal_mcar_50, "blue")
-IncDist_amelia(amelia_imp_unbal_mcar_30, "red")
-IncDist_amelia(amelia_imp_unbal_mcar_10, "green")
-legend("topright", 
-       legend = c("Initial Data", "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10"),
-       col = c("black", "blue", "red", "green"),
-       lwd = 2,
-       cex = 0.8)
+# 10% missingness
+DisttributionComparisionBal(
+  list(mice_imp_bal_mar_10, amelia_imp_bal_mar_10, mitml_imp_bal_mar_10, lstm_bal_mar_10),
+  colors,
+  "Balanced Panel - MAR 10%"
+)
 
-IncDist_amelia(amelia_imp_unbal_mar_50, "blue")
-IncDist_amelia(amelia_imp_unbal_mar_30, "red")
-IncDist_amelia(amelia_imp_unbal_mar_10, "green")
-legend("topright", 
-       legend = c("Initial Data", "unbal_mar_50", "unbal_mar_30", "unbal_mar_10"),
-       col = c("black", "blue", "red", "green"),
-       lwd = 2,
-       cex = 0.8)
+# 30% missingness
+DisttributionComparisionBal(
+  list(mice_imp_bal_mar_30, amelia_imp_bal_mar_30, mitml_imp_bal_mar_30, lstm_bal_mar_30),
+  colors,
+  "Balanced Panel - MAR 30%"
+)
 
-IncDist_amelia(amelia_imp_unbal_mnar_50, "blue")
-IncDist_amelia(amelia_imp_unbal_mnar_30, "red")
-IncDist_amelia(amelia_imp_unbal_mnar_10, "green")
-legend("topright", 
-       legend = c("Initial Data", "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
-       col = c("black", "blue", "red", "green"),
-       lwd = 2,
-       cex = 0.8)
+# 50% missingness
+DisttributionComparisionBal(
+  list(mice_imp_bal_mar_50, amelia_imp_bal_mar_50, mitml_imp_bal_mar_50, lstm_bal_mar_50),
+  colors,
+  "Balanced Panel - MAR 50%"
+)
 
-### LSTM-Network ###
-####################
+##### MNAR #####
 
-# Plot Distribution
-IncDist_LSTM <- function(data, col) {
-  DataTemp_LSTM <- density(data$Income, na.rm = TRUE)
-  lines(DataTemp_LSTM, col = col, lwd = 2)
+# 10% missingness
+DisttributionComparisionBal(
+  list(mice_imp_bal_mnar_10, amelia_imp_bal_mnar_10, mitml_imp_bal_mnar_10, lstm_bal_mnar_10),
+  colors,
+  "Balanced Panel - MNAR 10%"
+)
+
+# 30% missingness
+DisttributionComparisionBal(
+  list(mice_imp_bal_mnar_30, amelia_imp_bal_mar_30, mitml_imp_bal_mnar_30, lstm_bal_mnar_30),
+  colors,
+  "Balanced Panel - MNAR 30%"
+)
+
+# 50% missingness
+DisttributionComparisionBal(
+  list(mice_imp_bal_mnar_50, amelia_imp_bal_mnar_50, mitml_imp_bal_mnar_50, lstm_bal_mnar_50),
+  colors,
+  "Balanced Panel - MNAR 50%"
+)
+
+### Unbalanced Panel Comparisons ###
+
+DisttributionComparisionUnbal <- function(data_list, colors, title) {
+  plot(density(unbalanced_panel_data$Income, na.rm = TRUE), 
+       main = title, xlab = "Income", ylab = "Density", 
+       lwd = 2, col = "black")
+  for (i in 1:length(data_list)) {
+    lines(density(data_list[[i]]$Income, na.rm = TRUE), col = colors[i], lwd = 2)
+  }
+  legend("topright", 
+         legend = c("unbalanced_panel_data", "mice", "amelia", "mitml", "lstm"), 
+         col = c("black", colors), 
+         lwd = 2, cex = 1)
 }
 
-# Balanced Panel
-DataTemp_LSTM <- density(balanced_panel_data$Income, na.rm = TRUE)
-plot(DataTemp_LSTM, 
-     main = "Balanced Panel (MNAR)", 
-     xlab = "Income", 
-     ylab = "Density",
-     lwd = 2, col = "black")
+### MCAR ###
+# 10% missingness
+DisttributionComparisionUnbal(
+  list(mice_imp_unbal_mcar_10, amelia_imp_unbal_mcar_10, mitml_imp_unbal_mcar_10, lstm_unbal_mcar_10),
+  colors,
+  "Unbalanced Panel - MCAR 10%"
+)
 
-IncDist_LSTM(lstm_bal_mcar_50, "blue")
-IncDist_LSTM(lstm_bal_mcar_30, "red")
-IncDist_LSTM(lstm_bal_mcar_10, "green")
-legend("topright", 
-       legend = c("Initial Data", "bal_mcar_50", "bal_mcar_30", "bal_mcar_10"),
-       col = c("black", "blue", "red", "green"),
-       lwd = 2,
-       cex = 0.8)
+# 30% missingness
+DisttributionComparisionUnbal(
+  list(mice_imp_unbal_mcar_30, amelia_imp_unbal_mcar_30, mitml_imp_unbal_mcar_30, lstm_unbal_mcar_30),
+  colors,
+  "Unbalanced Panel - MCAR 30%"
+)
 
-IncDist_LSTM(lstm_bal_mar_50, "blue")
-IncDist_LSTM(lstm_bal_mar_30, "red")
-IncDist_LSTM(lstm_bal_mar_10, "green")
-legend("topright", 
-       legend = c("Initial Data", "bal_mar_50", "bal_mar_30", "bal_mar_10"),
-       col = c("black", "blue", "red", "green"),
-       lwd = 2,
-       cex = 0.8)
+# 50% missingness
+DisttributionComparisionUnbal(
+  list(mice_imp_unbal_mcar_50, amelia_imp_unbal_mcar_50, mitml_imp_unbal_mcar_50, lstm_unbal_mcar_50),
+  colors,
+  "Unbalanced Panel - MCAR 50%"
+)
 
-IncDist_LSTM(lstm_bal_mnar_50, "blue")
-IncDist_LSTM(lstm_bal_mnar_30, "red")
-IncDist_LSTM(lstm_bal_mnar_10, "green")
-legend("topright", 
-       legend = c("Initial Data", "bal_mnar_50", "bal_mnar_30", "bal_mnar_10"),
-       col = c("black", "blue", "red", "green"),
-       lwd = 2,
-       cex = 0.8)
+### MAR ###
 
-# Unbalanced Panel
-DataTemp_LSTM <- density(unbalanced_panel_data$Income, na.rm = TRUE)
-plot(DataTemp_LSTM, 
-     main = "Unbalanced Panel (MNAR)", 
-     xlab = "Income", 
-     ylab = "Density",
-     lwd = 2, col = "black")
+# 10% missingness
+DisttributionComparisionUnbal(
+  list(mice_imp_unbal_mar_10, amelia_imp_unbal_mar_10, mitml_imp_unbal_mar_10, lstm_unbal_mar_10),
+  colors,
+  "Unbalanced Panel - MAR 10%"
+)
 
-IncDist_LSTM(lstm_unbal_mcar_50, "blue")
-IncDist_LSTM(lstm_unbal_mcar_30, "red")
-IncDist_LSTM(lstm_unbal_mcar_10, "green")
-legend("topright", 
-       legend = c("Initial Data", "unbal_mcar_50", "unbal_mcar_30", "unbal_mcar_10"),
-       col = c("black", "blue", "red", "green"),
-       lwd = 2,
-       cex = 0.8)
+# 30% missingness
+DisttributionComparisionUnbal(
+  list(mice_imp_unbal_mar_30, amelia_imp_unbal_mar_30, mitml_imp_unbal_mar_30, lstm_unbal_mar_30),
+  colors,
+  "Unbalanced Panel - MAR 30%"
+)
 
-IncDist_LSTM(lstm_unbal_mar_50, "blue")
-IncDist_LSTM(lstm_unbal_mar_30, "red")
-IncDist_LSTM(lstm_unbal_mar_10, "green")
-legend("topright", 
-       legend = c("Initial Data", "unbal_mar_50", "unbal_mar_30", "unbal_mar_10"),
-       col = c("black", "blue", "red", "green"),
-       lwd = 2,
-       cex = 0.8)
+# 50% missingness
+DisttributionComparisionUnbal(
+  list(mice_imp_unbal_mar_50, amelia_imp_unbal_mar_50, mitml_imp_unbal_mar_50, lstm_unbal_mar_50),
+  colors,
+  "Unbalanced Panel - MAR 50%"
+)
 
-IncDist_LSTM(lstm_unbal_mnar_50, "blue")
-IncDist_LSTM(lstm_unbal_mnar_30, "red")
-IncDist_LSTM(lstm_unbal_mnar_10, "green")
-legend("topright", 
-       legend = c("Initial Data", "unbal_mnar_50", "unbal_mnar_30", "unbal_mnar_10"),
-       col = c("black", "blue", "red", "green"),
-       lwd = 2,
-       cex = 0.8)
+### MNAR ###
+
+# 10% missingness
+DisttributionComparisionUnbal(
+  list(mice_imp_unbal_mnar_10, amelia_imp_unbal_mnar_10, mitml_imp_unbal_mnar_10, lstm_unbal_mnar_10),
+  colors,
+  "Unbalanced Panel - MNAR 10%"
+)
+
+# 30% missingness
+DisttributionComparisionUnbal(
+  list(mice_imp_unbal_mnar_30, amelia_imp_unbal_mnar_30, mitml_imp_unbal_mnar_30, lstm_unbal_mnar_30),
+  colors,
+  "Unbalanced Panel - MCAR 30%"
+)
+
+# 50% missingness
+DisttributionComparisionUnbal(
+  list(mice_imp_unbal_mnar_50, amelia_imp_unbal_mnar_50, mitml_imp_unbal_mnar_50, lstm_unbal_mnar_50),
+  colors,
+  "Unbalanced Panel - MNAR 50%"
+)
 
 par(mfrow = c(1, 1))
 
@@ -1546,7 +1406,7 @@ MargedDataframe_Bal <- list(
   lstm_bal_mnar_10 = lstm_bal_mnar_10
 )
 
-MargedDataframe_Bal[["RealBalancedPanel"]] <- balanced_panel_data # Add the RealBalancedPanel to the MargedDataframe_Bal
+MargedDataframe_Bal[["balanced_panel_data"]] <- balanced_panel_data # Add the RealBalancedPanel to the MargedDataframe_Bal
 
 CorrDF_Bal <- data.frame() # Empty dataframe to store the results
 
@@ -1575,6 +1435,23 @@ rownames(CorrDF_Bal) <- names(MargedDataframe_Bal) # Add row names
 colnames(CorrDF_Bal) <- names(correlations) # Add column names
 CorrDF_Bal
 View(CorrDF_Bal)
+
+
+CorrDF_Bal <- CorrDF_Bal %>%
+  mutate(Package = case_when(
+    grepl("^mice", rownames(CorrDF_Bal)) ~ "mice",
+    grepl("^mitml", rownames(CorrDF_Bal)) ~ "mitml",
+    grepl("^amelia", rownames(CorrDF_Bal)) ~ "amelia",
+    grepl("^lstm", rownames(CorrDF_Bal)) ~ "lstm",
+    TRUE ~ "OriginalData"
+  ))
+
+# Rank the rows based on the package names
+CorrDFBal_ranked <- CorrDF_Bal %>%
+  arrange(Package)
+
+# View the new ranked dataframe
+View(CorrDFBal_ranked)
 
 ### Unbalanced Panel ###
 
@@ -1618,7 +1495,7 @@ MargedDataframe_Unbal <- list(
   lstm_unbal_mnar_10 = lstm_unbal_mnar_10
 )
 
-MargedDataframe_Unbal[["RealUnbalancedPanel"]] <- balanced_panel_data # Add the RealBalancedPanel to the MargedDataframe_Unbal
+MargedDataframe_Unbal[["unbalanced_panel_data"]] <- unbalanced_panel_data # Add the RealBalancedPanel to the MargedDataframe_Unbal
 
 CorrDF_Unbal <- data.frame() # Empty dataframe to store the results
 
@@ -1648,37 +1525,23 @@ colnames(CorrDF_Unbal) <- names(correlations) # Add column names
 CorrDF_Unbal
 View(CorrDF_Unbal)
 
-# Function to generate correlation Heatmap 
-CorrelationHeatmap <- function(corr_df) {
-  
-  CorrDFLong <- melt(corr_df, id.vars = NULL, variable.name = "Variable", value.name = "Correlation") # Reshape long format
-  
-  # Create heatmap
-  ggplot(CorrDFLong, aes(x = Variable, y = Variable, fill = Correlation)) +
-    geom_tile() + 
-    scale_fill_gradient2(low = "gray", high = "red", mid = "white", midpoint = 0) + 
-    theme_minimal() +
-    labs(title = "", x = "Variable", y = "Dataset", fill = "Correlation") +
-    theme(axis.text.x = element_text(angle = 40, hjust = 1)) +
-    scale_x_discrete(limits = rev(levels(CorrDFLong$Variable)))  # Reverse x-axis if needed
-  
-  CorrDFNumeric <- corr_df[, sapply(corr_df, is.numeric)] # Non numeric column generation
-  
-  CorrDFMatrix <- as.matrix(CorrDFNumeric) # Convert the dataframe into a matrix (easier for pheatmap)
-  
-  pheatmap(CorrDFMatrix, 
-           color = colorRampPalette(c("gray", "white", "red"))(50), 
-           clustering_distance_rows = "euclidean", 
-           clustering_distance_cols = "euclidean", 
-           clustering_method = "complete", 
-           display_numbers = TRUE, 
-           main = "")
-}
 
+CorrDF_Unbal <- CorrDF_Unbal %>%
+  mutate(Package = case_when(
+    grepl("^mice", rownames(CorrDF_Unbal)) ~ "mice",
+    grepl("^mitml", rownames(CorrDF_Unbal)) ~ "mitml",
+    grepl("^amelia", rownames(CorrDF_Unbal)) ~ "amelia",
+    grepl("^lstm", rownames(CorrDF_Unbal)) ~ "lstm",
+    TRUE ~ "OriginalData"
+  ))
 
-CorrelationHeatmap(CorrDF_Bal)
+# Rank the rows based on the package names
+CorrDFUnbal_ranked <- CorrDF_Unbal %>%
+  arrange(Package)
 
-CorrelationHeatmap(CorrDF_Unbal)
+# View the new ranked dataframe
+View(CorrDFUnbal_ranked)
+
 
 
 ###########################
