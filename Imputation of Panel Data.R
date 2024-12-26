@@ -1540,7 +1540,7 @@ CorrDFUnbal_ranked <- CorrDF_Unbal %>%
   arrange(Package)
 
 # View the new ranked dataframe
-View(CorrDFUnbal_ranked)
+View(CorrDFUnbal_ranked) 
 
 
 
@@ -1595,7 +1595,9 @@ CoefficientsExtraction <- function(data) {
 }
 
 balanced_panel_data_coef <- CoefficientsExtraction(balanced_panel_data)
+summary(balanced_panel_data_coef)
 unbalanced_panel_data_coef <- CoefficientsExtraction(unbalanced_panel_data)
+summary(unbalanced_panel_data_coef)
 
 ### mice ###
 mice_Coff <- function(mice_imp) {
@@ -2156,66 +2158,62 @@ AverageRMSE_Unbal <- RMSEDF_Unbal %>%
 print(AverageRMSE_Unbal)
 
 
-#### Confidence Interval Overlap with Ranking ####
-CI_Overlap <- function(BiasMeanDF, Bias_Bal, dataset_col_name = "Dataset", mean_col_name = "MeanBias") {
+##### Plot RMSE Histograms ####
+
+BiasPlot <- function(BiasDF, bias_column, algorithm_name) {
   
-  # Calculate confidence interval
-  BiasMeanDF <- BiasMeanDF %>%
-    rowwise() %>%
-    mutate(
-      LowerCI = !!sym(mean_col_name) - qt(0.975, df = nrow(Bias_Bal) - 1) * sd(Bias_Bal[[!!sym(dataset_col_name)]], na.rm = TRUE) / sqrt(nrow(Bias_Bal)),
-      UpperCI = !!sym(mean_col_name) + qt(0.975, df = nrow(Bias_Bal) - 1) * sd(Bias_Bal[[!!sym(dataset_col_name)]], na.rm = TRUE) / sqrt(nrow(Bias_Bal))
-    ) %>%
-    ungroup()
+  # Filter for the specific tools
+  BiasDF_filtered <- BiasDF %>%
+    filter(Algorithm == algorithm_name) %>%
+    mutate(Dataset = as.factor(Dataset),
+           Bias = as.numeric(get(bias_column)))
   
-  # Calculate the width and rank of the confidence interval
-  BiasMeanDF <- BiasMeanDF %>%
-    mutate(CIWidth = UpperCI - LowerCI)
-  
-  BiasMeanDF <- BiasMeanDF %>%
-    arrange(CIWidth) %>%
-    mutate(Rank = row_number())
-  
-  # Create the confidence interval overlap plot with rankings
-  ggplot(BiasMeanDF, aes(x = reorder(!!sym(dataset_col_name), CIWidth), y = !!sym(mean_col_name))) +
-    geom_point(size = 3, color = "blue") +
-    geom_errorbar(aes(ymin = LowerCI, ymax = UpperCI), width = 0.2, color = "red") +
-    geom_text(aes(label = Rank), hjust = -0.5, size = 3, color = "black") +  # Add rank labels
-    coord_flip() +
-    labs(
-      title = "Confidence Interval Overlap of Mean Bias (Ranked by CI Width)",
-      x = "Dataset",
-      y = "Mean Bias"
-    ) +
+  # Vertical bar chart
+  ggplot(BiasDF_filtered, aes(y = reorder(Dataset, Bias), x = Bias)) +
+    geom_bar(stat = "identity", fill = "steelblue") +
+    geom_text(aes(label = round(Bias, 3)), hjust = -0.2, size = 3) +
+    scale_x_continuous(expand = expansion(mult = c(0, 0.1))) +
+    labs(title = paste("Bias of Imputed Datasets:", algorithm_name),
+         x = "Bias",
+         y = "Dataset") +
     theme_minimal() +
-    theme(axis.text.x = element_text(angle = 40, hjust = 1))
+    theme(axis.text.y = element_text(size = 8))
 }
 
-CI_Overlap(BiasMeanDF_Bal, Bias_Bal)
-CI_Overlap(BiasMeanDF_Unbal, Bias_Unbal)
+
+plot_mice <- BiasPlot(BiasMeanDF_Bal, "MeanBias", "mice")
+plot_amelia <- BiasPlot(BiasMeanDF_Bal, "MeanBias", "amelia")
+plot_lstm <- BiasPlot(BiasMeanDF_Bal, "MeanBias", "lstm")
+plot_mitml <- BiasPlot(BiasMeanDF_Bal, "MeanBias", "mitml")
+
+grid.arrange(plot_mice, plot_amelia, plot_lstm, plot_mitml, nrow = 2) # Adjusted for a 2-row layout
 
 ##### Plot RMSE Histograms ####
 
-RMSE_Histogram <- function(RMSEDF, rmse_column) {
+RMSEPlot <- function(RMSEDF, rmse_column, algorithm_name) {
   
-  RMSEDF <- RMSEDF %>%
-    mutate(Dataset = as.factor(Dataset), 
+  # Filter for specific tools
+  RMSEDF_filtered <- RMSEDF %>%
+    filter(Algorithm == algorithm_name) %>%
+    mutate(Dataset = as.factor(Dataset),
            RMSE = as.numeric(get(rmse_column)))
   
-  # Create the vertical bar chart
-  ggplot(RMSEDF, aes(y = reorder(Dataset, RMSE), x = RMSE, fill = Algorithm)) +
-    geom_bar(stat = "identity") +
+  # vertical bar chart
+  ggplot(RMSEDF_filtered, aes(y = reorder(Dataset, RMSE), x = RMSE)) +
+    geom_bar(stat = "identity", fill = "steelblue") +
     geom_text(aes(label = round(RMSE, 3)), hjust = -0.2, size = 3) +
     scale_x_continuous(expand = expansion(mult = c(0, 0.1))) +
-    labs(title = "RMSE of Imputed Datasets Across Algorithms",
+    labs(title = paste("RMSE of Imputed Datasets:", algorithm_name),
          x = "RMSE",
          y = "Dataset") +
     theme_minimal() +
-    theme(axis.text.y = element_text(size = 8),
-          legend.position = "bottom",
-          legend.title = element_blank())
+    theme(axis.text.y = element_text(size = 8))
 }
 
+plot_mice <- RMSEPlot(RMSEDF_Unbal, "RMSE_Unbal", "mice")
+plot_amelia <- RMSEPlot(RMSEDF_Unbal, "RMSE_Unbal", "amelia")
+plot_lstm <- RMSEPlot(RMSEDF_Unbal, "RMSE_Unbal", "lstm")
+plot_mitml <- RMSEPlot(RMSEDF_Unbal, "RMSE_Unbal", "mitml")
 
-RMSE_Histogram(RMSEDF_Bal, "RMSE_Bal")
-RMSE_Histogram(RMSEDF_Unbal, "RMSE_Unbal")
+grid.arrange(plot_mice, plot_amelia, plot_lstm, plot_mitml, nrow = 2) # Same for Unbalanced
+
