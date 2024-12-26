@@ -1,62 +1,237 @@
-# Load necessary libraries
-library(ggplot2)
-library(plm)
-library(dplyr)
-
-# Convert pdata.frame to regular data.frame
-data <- as.data.frame(balanced_panel_data)
-
-# Convert pseries columns to numeric (because pseries is a special class for panel data)
-data$Age <- as.numeric(as.vector(data$Age))
-data$Income <- as.numeric(as.vector(data$Income))
-
-# Ensure MaritalStatus is a factor
-data$MaritalStatus <- factor(data$MaritalStatus, levels = c("1", "2", "3", "4"), 
-                             labels = c("Single", "Married", "Divorced", "Widowed"))
-
-# Filter data for Age between 20 and 60
-data_filtered <- data %>% filter(Age >= 20 & Age <= 60)
-
-# Plot the conditional distribution of income for the filtered age group
-ggplot(data_filtered, aes(x = Income, color = MaritalStatus, fill = MaritalStatus)) +
-  geom_density(alpha = 0.3) +  # Density plot with transparency
-  labs(
-    title = "Conditional Distribution of Income by Marital Status and Age (20-60)",
-    x = "Income",
-    y = "Density",
-    color = "Marital Status",
-    fill = "Marital Status"
-  ) +
-  theme_minimal() +
-  theme(legend.position = "bottom")
 
 
-#################
-BiasPlot <- function(BiasDF, bias_column, algorithm_name) {
+
+
+ConDisttributionComparisionBal <- function(data_list, colors, title) {
   
-  # Filter for the specific algorithm
-  BiasDF_filtered <- BiasDF %>%
-    filter(Algorithm == algorithm_name) %>%
-    mutate(Dataset = as.factor(Dataset),
-           Bias = as.numeric(get(bias_column)))
+  # Check the format
+  data <- as.data.frame(balanced_panel_data) 
+  data$Age <- as.numeric(as.vector(data$Age))
+  data$Income <- as.numeric(as.vector(data$Income))
+  data$MaritalStatus <- factor(data$MaritalStatus, levels = c("1", "2", "3", "4"), 
+                               labels = c("Single", "Married", "Divorced", "Widowed"))
   
-  # Vertical bar chart (similar to RMSEPlot)
-  ggplot(BiasDF_filtered, aes(y = reorder(Dataset, Bias), x = Bias)) +
-    geom_bar(stat = "identity", fill = "steelblue") +
-    geom_text(aes(label = round(Bias, 3)), hjust = -0.2, size = 3) +
-    scale_x_continuous(expand = expansion(mult = c(0, 0.1))) +
-    labs(title = paste("Bias of Imputed Datasets:", algorithm_name),
-         x = "Bias",
-         y = "Dataset") +
+  
+  ConAge <- data %>% filter(Age >= 15 & Age <= 65) # Condition on Age
+  
+  # Plot the conditional distribution of "Income" by "Marital Status"
+  p <- ggplot(ConAge, aes(x = Income)) +
+    geom_density(color = "black", size = 1) + # Original data coloured black
+    labs(
+      title = title,
+      x = "Income",
+      y = "Density"
+    ) +
     theme_minimal() +
-    theme(axis.text.y = element_text(size = 8))
+    theme(legend.position = "bottom") +
+    facet_wrap(~ MaritalStatus)
+  
+  # Compare imputed datasets
+  for (i in 1:length(data_list)) {
+    ImpData <- as.data.frame(data_list[[i]])
+    ImpData$Age <- as.numeric(as.vector(ImpData$Age))
+    ImpData$Income <- as.numeric(as.vector(ImpData$Income))
+    ImpData$MaritalStatus <- factor(ImpData$MaritalStatus, levels = c("1", "2", "3", "4"), 
+                                         labels = c("Single", "Married", "Divorced", "Widowed"))
+    ImpDataConAge <- ImpData %>% filter(Age >= 15 & Age <= 65)
+    
+    # Add density line for each imputed dataset with the specified colors
+    p <- p + geom_density(data = ImpDataConAge, aes(x = Income), 
+                          color = colors[i], size = .5, linetype = "solid") 
+  }
+  
+  print(p) # Print the plot
+  
+
 }
 
-# Create plots for each algorithm
-plot_mice <- BiasPlot(BiasMeanDF_Bal, "MeanBias", "mice")
-plot_amelia <- BiasPlot(BiasMeanDF_Bal, "MeanBias", "amelia")
-plot_lstm <- BiasPlot(BiasMeanDF_Bal, "MeanBias", "lstm")
-plot_mitml <- BiasPlot(BiasMeanDF_Bal, "MeanBias", "mitml")
 
-# Arrange the plots in a grid (same as for RMSE)
-grid.arrange(plot_mice, plot_amelia, plot_lstm, plot_mitml, nrow = 2) # Adjusted for a 2-row layout
+colors <- c("blue", "red", "green", "purple") # mice = blue, amelia = red, mitml = green, lstm = purple
+
+
+###### MCAR ##### 
+# 10% missingness
+ConDisttributionComparisionBal(
+  list(mice_imp_bal_mcar_10, amelia_imp_bal_mcar_10, mitml_imp_bal_mcar_10, lstm_bal_mcar_10),
+  colors,
+  "Balanced Panel - MCAR 10%"
+)
+
+# 30% missingness
+ConDisttributionComparisionBal(
+  list(mice_imp_bal_mcar_30, amelia_imp_bal_mcar_30, mitml_imp_bal_mcar_30, lstm_bal_mcar_30),
+  colors,
+  "Balanced Panel - MCAR 30%"
+)
+
+# 50% missingness
+ConDisttributionComparisionBal(
+  list(mice_imp_bal_mcar_50, amelia_imp_bal_mcar_50, mitml_imp_bal_mcar_50, lstm_bal_mcar_50),
+  colors,
+  "Balanced Panel - MCAR 50%"
+)
+
+##### MAR #####
+
+# 10% missingness
+ConDisttributionComparisionBal(
+  list(mice_imp_bal_mar_10, amelia_imp_bal_mar_10, mitml_imp_bal_mar_10, lstm_bal_mar_10),
+  colors,
+  "Balanced Panel - MAR 10%"
+)
+
+# 30% missingness
+ConDisttributionComparisionBal(
+  list(mice_imp_bal_mar_30, amelia_imp_bal_mar_30, mitml_imp_bal_mar_30, lstm_bal_mar_30),
+  colors,
+  "Balanced Panel - MAR 30%"
+)
+
+# 50% missingness
+ConDisttributionComparisionBal(
+  list(mice_imp_bal_mar_50, amelia_imp_bal_mar_50, mitml_imp_bal_mar_50, lstm_bal_mar_50),
+  colors,
+  "Balanced Panel - MAR 50%"
+)
+
+##### MNAR #####
+
+# 10% missingness
+ConDisttributionComparisionBal(
+  list(mice_imp_bal_mnar_10, amelia_imp_bal_mnar_10, mitml_imp_bal_mnar_10, lstm_bal_mnar_10),
+  colors,
+  "Balanced Panel - MNAR 10%"
+)
+
+# 30% missingness
+ConDisttributionComparisionBal(
+  list(mice_imp_bal_mnar_30, amelia_imp_bal_mar_30, mitml_imp_bal_mnar_30, lstm_bal_mnar_30),
+  colors,
+  "Balanced Panel - MNAR 30%"
+)
+
+# 50% missingness
+ConDisttributionComparisionBal(
+  list(mice_imp_bal_mnar_50, amelia_imp_bal_mnar_50, mitml_imp_bal_mnar_50, lstm_bal_mnar_50),
+  colors,
+  "Balanced Panel - MNAR 50%"
+)
+
+
+
+
+
+
+
+ConDisttributionComparisionUnbal <- function(data_list, colors, title) {
+  
+  # Check the format, because the p.data format does not work properly
+  data <- as.data.frame(unbalanced_panel_data) 
+  data$Age <- as.numeric(as.vector(data$Age))
+  data$Income <- as.numeric(as.vector(data$Income))
+  data$MaritalStatus <- factor(data$MaritalStatus, levels = c("1", "2", "3", "4"), 
+                               labels = c("Single", "Married", "Divorced", "Widowed"))
+  
+  
+  ConAge <- data %>% filter(Age >= 15 & Age <= 65) # Condition on Age
+  
+  # Plot the conditional distribution of "Income" by "Marital Status"
+  p <- ggplot(ConAge, aes(x = Income)) +
+    geom_density(color = "black", size = 1) + # Original data coloured black
+    labs(
+      title = title,
+      x = "Income",
+      y = "Density"
+    ) +
+    theme_minimal() +
+    theme(legend.position = "bottom") +
+    facet_wrap(~ MaritalStatus)
+  
+  # Compare imputed datasets
+  for (i in 1:length(data_list)) {
+    ImpData <- as.data.frame(data_list[[i]])
+    ImpData$Age <- as.numeric(as.vector(ImpData$Age))
+    ImpData$Income <- as.numeric(as.vector(ImpData$Income))
+    ImpData$MaritalStatus <- factor(ImpData$MaritalStatus, levels = c("1", "2", "3", "4"), 
+                                    labels = c("Single", "Married", "Divorced", "Widowed"))
+    ImpDataConAge <- ImpData %>% filter(Age >= 15 & Age <= 65)
+    
+    # Add density line for each imputed dataset with the specified colors
+    p <- p + geom_density(data = ImpDataConAge, aes(x = Income), 
+                          color = colors[i], size = .5, linetype = "solid") 
+  }
+  
+  print(p) # Print the plot
+  
+  
+}
+
+
+
+### MCAR ###
+# 10% missingness
+ConDisttributionComparisionUnbal(
+  list(mice_imp_unbal_mcar_10, amelia_imp_unbal_mcar_10, mitml_imp_unbal_mcar_10, lstm_unbal_mcar_10),
+  colors,
+  "Unbalanced Panel - MCAR 10%"
+)
+
+# 30% missingness
+ConDisttributionComparisionUnbal(
+  list(mice_imp_unbal_mcar_30, amelia_imp_unbal_mcar_30, mitml_imp_unbal_mcar_30, lstm_unbal_mcar_30),
+  colors,
+  "Unbalanced Panel - MCAR 30%"
+)
+
+# 50% missingness
+ConDisttributionComparisionUnbal(
+  list(mice_imp_unbal_mcar_50, amelia_imp_unbal_mcar_50, mitml_imp_unbal_mcar_50, lstm_unbal_mcar_50),
+  colors,
+  "Unbalanced Panel - MCAR 50%"
+)
+
+### MAR ###
+
+# 10% missingness
+ConDisttributionComparisionUnbal(
+  list(mice_imp_unbal_mar_10, amelia_imp_unbal_mar_10, mitml_imp_unbal_mar_10, lstm_unbal_mar_10),
+  colors,
+  "Unbalanced Panel - MAR 10%"
+)
+
+# 30% missingness
+ConDisttributionComparisionUnbal(
+  list(mice_imp_unbal_mar_30, amelia_imp_unbal_mar_30, mitml_imp_unbal_mar_30, lstm_unbal_mar_30),
+  colors,
+  "Unbalanced Panel - MAR 30%"
+)
+
+# 50% missingness
+ConDisttributionComparisionUnbal(
+  list(mice_imp_unbal_mar_50, amelia_imp_unbal_mar_50, mitml_imp_unbal_mar_50, lstm_unbal_mar_50),
+  colors,
+  "Unbalanced Panel - MAR 50%"
+)
+
+### MNAR ###
+
+# 10% missingness
+ConDisttributionComparisionUnbal(
+  list(mice_imp_unbal_mnar_10, amelia_imp_unbal_mnar_10, mitml_imp_unbal_mnar_10, lstm_unbal_mnar_10),
+  colors,
+  "Unbalanced Panel - MNAR 10%"
+)
+
+# 30% missingness
+ConDisttributionComparisionUnbal(
+  list(mice_imp_unbal_mnar_30, amelia_imp_unbal_mnar_30, mitml_imp_unbal_mnar_30, lstm_unbal_mnar_30),
+  colors,
+  "Unbalanced Panel - MCAR 30%"
+)
+
+# 50% missingness
+ConDisttributionComparisionUnbal(
+  list(mice_imp_unbal_mnar_50, amelia_imp_unbal_mnar_50, mitml_imp_unbal_mnar_50, lstm_unbal_mnar_50),
+  colors,
+  "Unbalanced Panel - MNAR 50%"
+)
