@@ -1,237 +1,126 @@
+### Balanced Panel ###
 
+ImpDataBal <- list(
+  mice_imp_bal_mcar_10, amelia_imp_bal_mcar_10, mitml_imp_bal_mcar_10, lstm_bal_mcar_10,
+  mice_imp_bal_mcar_30, amelia_imp_bal_mcar_30, mitml_imp_bal_mcar_30, lstm_bal_mcar_30,
+  mice_imp_bal_mcar_50, amelia_imp_bal_mcar_50, mitml_imp_bal_mcar_50, lstm_bal_mcar_50,
+  mice_imp_bal_mar_10, amelia_imp_bal_mar_10, mitml_imp_bal_mar_10, lstm_bal_mar_10,
+  mice_imp_bal_mar_30, amelia_imp_bal_mar_30, mitml_imp_bal_mar_30, lstm_bal_mar_30,
+  mice_imp_bal_mar_50, amelia_imp_bal_mar_50, mitml_imp_bal_mar_50, lstm_bal_mar_50,
+  mice_imp_bal_mnar_10, amelia_imp_bal_mnar_10, mitml_imp_bal_mnar_10, lstm_bal_mnar_10,
+  mice_imp_bal_mnar_30, amelia_imp_bal_mnar_30, mitml_imp_bal_mnar_30, lstm_bal_mnar_30,
+  mice_imp_bal_mnar_50, amelia_imp_bal_mnar_50, mitml_imp_bal_mnar_50, lstm_bal_mnar_50
+)
 
+# Dataset Names
+DatasetsNameBal <- c(
+  "mice_imp_bal_mcar_10", "amelia_imp_bal_mcar_10", "mitml_imp_bal_mcar_10", "lstm_bal_mcar_10",
+  "mice_imp_bal_mcar_30", "amelia_imp_bal_mcar_30", "mitml_imp_bal_mcar_30", "lstm_bal_mcar_30",
+  "mice_imp_bal_mcar_50", "amelia_imp_bal_mcar_50", "mitml_imp_bal_mcar_50", "lstm_bal_mcar_50",
+  "mice_imp_bal_mar_10", "amelia_imp_bal_mar_10", "mitml_imp_bal_mar_10", "lstm_bal_mar_10",
+  "mice_imp_bal_mar_30", "amelia_imp_bal_mar_30", "mitml_imp_bal_mar_30", "lstm_bal_mar_30",
+  "mice_imp_bal_mar_50", "amelia_imp_bal_mar_50", "mitml_imp_bal_mar_50", "lstm_bal_mar_50",
+  "mice_imp_bal_mnar_10", "amelia_imp_bal_mnar_10", "mitml_imp_bal_mnar_10", "lstm_bal_mnar_10",
+  "mice_imp_bal_mnar_30", "amelia_imp_bal_mnar_30", "mitml_imp_bal_mnar_30", "lstm_bal_mnar_30",
+  "mice_imp_bal_mnar_50", "amelia_imp_bal_mnar_50", "mitml_imp_bal_mnar_50", "lstm_bal_mnar_50"
+)
 
+# Generate empty dataframe
+WD_Bal <- data.frame(
+  Dataset = character(),
+  WassersteinDistance = numeric(),
+  stringsAsFactors = FALSE
+)
 
-ConDisttributionComparisionBal <- function(data_list, colors, title) {
+# Wasserstein distances calculation
+for (i in seq_along(ImpDataBal)) {
+  ImpIncomeBal <- ImpDataBal[[i]]$Income
+  wasserstein_distance <- wasserstein1d(balanced_panel_data$Income, ImpIncomeBal)
   
-  # Check the format
-  data <- as.data.frame(balanced_panel_data) 
-  data$Age <- as.numeric(as.vector(data$Age))
-  data$Income <- as.numeric(as.vector(data$Income))
-  data$MaritalStatus <- factor(data$MaritalStatus, levels = c("1", "2", "3", "4"), 
-                               labels = c("Single", "Married", "Divorced", "Widowed"))
-  
-  
-  ConAge <- data %>% filter(Age >= 15 & Age <= 65) # Condition on Age
-  
-  # Plot the conditional distribution of "Income" by "Marital Status"
-  p <- ggplot(ConAge, aes(x = Income)) +
-    geom_density(color = "black", size = 1) + # Original data coloured black
-    labs(
-      title = title,
-      x = "Income",
-      y = "Density"
-    ) +
-    theme_minimal() +
-    theme(legend.position = "bottom") +
-    facet_wrap(~ MaritalStatus)
-  
-  # Compare imputed datasets
-  for (i in 1:length(data_list)) {
-    ImpData <- as.data.frame(data_list[[i]])
-    ImpData$Age <- as.numeric(as.vector(ImpData$Age))
-    ImpData$Income <- as.numeric(as.vector(ImpData$Income))
-    ImpData$MaritalStatus <- factor(ImpData$MaritalStatus, levels = c("1", "2", "3", "4"), 
-                                         labels = c("Single", "Married", "Divorced", "Widowed"))
-    ImpDataConAge <- ImpData %>% filter(Age >= 15 & Age <= 65)
-    
-    # Add density line for each imputed dataset with the specified colors
-    p <- p + geom_density(data = ImpDataConAge, aes(x = Income), 
-                          color = colors[i], size = .5, linetype = "solid") 
-  }
-  
-  print(p) # Print the plot
-  
-
+  # Append results
+  WD_Bal <- rbind(WD_Bal, data.frame(
+    Dataset = DatasetsNameBal[i],
+    WassersteinDistance = wasserstein_distance
+  ))
 }
 
+print(WD_Bal)
 
-colors <- c("blue", "red", "green", "purple") # mice = blue, amelia = red, mitml = green, lstm = purple
-
-
-###### MCAR ##### 
-# 10% missingness
-ConDisttributionComparisionBal(
-  list(mice_imp_bal_mcar_10, amelia_imp_bal_mcar_10, mitml_imp_bal_mcar_10, lstm_bal_mcar_10),
-  colors,
-  "Balanced Panel - MCAR 10%"
+# Barplot
+GroupColors <- rep(c("red", "blue", "green", "red", "blue", "green", "red", "blue", "green", "red", "blue", "green"), each = 4)
+par(mar = c(5, 15, 4, 2)) 
+barplot(
+  height = WD_Bal$WassersteinDistance,
+  names.arg = WD_Bal$Dataset,
+  las = 2,
+  col = GroupColors,
+  main = "Wasserstein Distance Across the Imputed Datasets for Balanced Panel",
+  xlab = "Wasserstein Distance",
+  ylab = "",
+  cex.names = 0.9,
+  horiz = TRUE
 )
 
-# 30% missingness
-ConDisttributionComparisionBal(
-  list(mice_imp_bal_mcar_30, amelia_imp_bal_mcar_30, mitml_imp_bal_mcar_30, lstm_bal_mcar_30),
-  colors,
-  "Balanced Panel - MCAR 30%"
+### Unbalanced Panel ###
+
+ImpDataUnbal <- list(
+  mice_imp_unbal_mcar_10, amelia_imp_unbal_mcar_10, mitml_imp_unbal_mcar_10, lstm_unbal_mcar_10,
+  mice_imp_unbal_mcar_30, amelia_imp_unbal_mcar_30, mitml_imp_unbal_mcar_30, lstm_unbal_mcar_30,
+  mice_imp_unbal_mcar_50, amelia_imp_unbal_mcar_50, mitml_imp_unbal_mcar_50, lstm_unbal_mcar_50,
+  mice_imp_unbal_mar_10, amelia_imp_unbal_mar_10, mitml_imp_unbal_mar_10, lstm_unbal_mar_10,
+  mice_imp_unbal_mar_30, amelia_imp_unbal_mar_30, mitml_imp_unbal_mar_30, lstm_unbal_mar_30,
+  mice_imp_unbal_mar_50, amelia_imp_unbal_mar_50, mitml_imp_unbal_mar_50, lstm_unbal_mar_50,
+  mice_imp_unbal_mnar_10, amelia_imp_unbal_mnar_10, mitml_imp_unbal_mnar_10, lstm_unbal_mnar_10,
+  mice_imp_unbal_mnar_30, amelia_imp_unbal_mnar_30, mitml_imp_unbal_mnar_30, lstm_unbal_mnar_30,
+  mice_imp_unbal_mnar_50, amelia_imp_unbal_mnar_50, mitml_imp_unbal_mnar_50, lstm_unbal_mnar_50
 )
 
-# 50% missingness
-ConDisttributionComparisionBal(
-  list(mice_imp_bal_mcar_50, amelia_imp_bal_mcar_50, mitml_imp_bal_mcar_50, lstm_bal_mcar_50),
-  colors,
-  "Balanced Panel - MCAR 50%"
+# Dataset Names
+DatasetsNameUnbal <- c(
+  "mice_imp_unbal_mcar_10", "amelia_imp_unbal_mcar_10", "mitml_imp_unbal_mcar_10", "lstm_unbal_mcar_10",
+  "mice_imp_unbal_mcar_30", "amelia_imp_unbal_mcar_30", "mitml_imp_unbal_mcar_30", "lstm_unbal_mcar_30",
+  "mice_imp_unbal_mcar_50", "amelia_imp_unbal_mcar_50", "mitml_imp_unbal_mcar_50", "lstm_unbal_mcar_50",
+  "mice_imp_unbal_mar_10", "amelia_imp_unbal_mar_10", "mitml_imp_unbal_mar_10", "lstm_unbal_mar_10",
+  "mice_imp_unbal_mar_30", "amelia_imp_unbal_mar_30", "mitml_imp_unbal_mar_30", "lstm_unbal_mar_30",
+  "mice_imp_unbal_mar_50", "amelia_imp_unbal_mar_50", "mitml_imp_unbal_mar_50", "lstm_unbal_mar_50",
+  "mice_imp_unbal_mnar_10", "amelia_imp_unbal_mnar_10", "mitml_imp_unbal_mnar_10", "lstm_unbal_mnar_10",
+  "mice_imp_unbal_mnar_30", "amelia_imp_unbal_mnar_30", "mitml_imp_unbal_mnar_30", "lstm_unbal_mnar_30",
+  "mice_imp_unbal_mnar_50", "amelia_imp_unbal_mnar_50", "mitml_imp_unbal_mnar_50", "lstm_unbal_mnar_50"
 )
 
-##### MAR #####
-
-# 10% missingness
-ConDisttributionComparisionBal(
-  list(mice_imp_bal_mar_10, amelia_imp_bal_mar_10, mitml_imp_bal_mar_10, lstm_bal_mar_10),
-  colors,
-  "Balanced Panel - MAR 10%"
+# Generate empty dataframe
+WD_Unbal <- data.frame(
+  Dataset = character(),
+  WassersteinDistance = numeric(),
+  stringsAsFactors = FALSE
 )
 
-# 30% missingness
-ConDisttributionComparisionBal(
-  list(mice_imp_bal_mar_30, amelia_imp_bal_mar_30, mitml_imp_bal_mar_30, lstm_bal_mar_30),
-  colors,
-  "Balanced Panel - MAR 30%"
-)
-
-# 50% missingness
-ConDisttributionComparisionBal(
-  list(mice_imp_bal_mar_50, amelia_imp_bal_mar_50, mitml_imp_bal_mar_50, lstm_bal_mar_50),
-  colors,
-  "Balanced Panel - MAR 50%"
-)
-
-##### MNAR #####
-
-# 10% missingness
-ConDisttributionComparisionBal(
-  list(mice_imp_bal_mnar_10, amelia_imp_bal_mnar_10, mitml_imp_bal_mnar_10, lstm_bal_mnar_10),
-  colors,
-  "Balanced Panel - MNAR 10%"
-)
-
-# 30% missingness
-ConDisttributionComparisionBal(
-  list(mice_imp_bal_mnar_30, amelia_imp_bal_mar_30, mitml_imp_bal_mnar_30, lstm_bal_mnar_30),
-  colors,
-  "Balanced Panel - MNAR 30%"
-)
-
-# 50% missingness
-ConDisttributionComparisionBal(
-  list(mice_imp_bal_mnar_50, amelia_imp_bal_mnar_50, mitml_imp_bal_mnar_50, lstm_bal_mnar_50),
-  colors,
-  "Balanced Panel - MNAR 50%"
-)
-
-
-
-
-
-
-
-ConDisttributionComparisionUnbal <- function(data_list, colors, title) {
+# Wasserstein distances calculation
+for (i in seq_along(ImpDataUnbal)) {
+  ImpIncomeUnbal <- ImpDataUnbal[[i]]$Income
+  wasserstein_distance <- wasserstein1d(unbalanced_panel_data$Income, ImpIncomeUnbal)
   
-  # Check the format, because the p.data format does not work properly
-  data <- as.data.frame(unbalanced_panel_data) 
-  data$Age <- as.numeric(as.vector(data$Age))
-  data$Income <- as.numeric(as.vector(data$Income))
-  data$MaritalStatus <- factor(data$MaritalStatus, levels = c("1", "2", "3", "4"), 
-                               labels = c("Single", "Married", "Divorced", "Widowed"))
-  
-  
-  ConAge <- data %>% filter(Age >= 15 & Age <= 65) # Condition on Age
-  
-  # Plot the conditional distribution of "Income" by "Marital Status"
-  p <- ggplot(ConAge, aes(x = Income)) +
-    geom_density(color = "black", size = 1) + # Original data coloured black
-    labs(
-      title = title,
-      x = "Income",
-      y = "Density"
-    ) +
-    theme_minimal() +
-    theme(legend.position = "bottom") +
-    facet_wrap(~ MaritalStatus)
-  
-  # Compare imputed datasets
-  for (i in 1:length(data_list)) {
-    ImpData <- as.data.frame(data_list[[i]])
-    ImpData$Age <- as.numeric(as.vector(ImpData$Age))
-    ImpData$Income <- as.numeric(as.vector(ImpData$Income))
-    ImpData$MaritalStatus <- factor(ImpData$MaritalStatus, levels = c("1", "2", "3", "4"), 
-                                    labels = c("Single", "Married", "Divorced", "Widowed"))
-    ImpDataConAge <- ImpData %>% filter(Age >= 15 & Age <= 65)
-    
-    # Add density line for each imputed dataset with the specified colors
-    p <- p + geom_density(data = ImpDataConAge, aes(x = Income), 
-                          color = colors[i], size = .5, linetype = "solid") 
-  }
-  
-  print(p) # Print the plot
-  
-  
+  # Append results
+  WD_Unbal <- rbind(WD_Unbal, data.frame(
+    Dataset = DatasetsNameUnbal[i],
+    WassersteinDistance = wasserstein_distance
+  ))
 }
 
+print(WD_Unbal)
 
-
-### MCAR ###
-# 10% missingness
-ConDisttributionComparisionUnbal(
-  list(mice_imp_unbal_mcar_10, amelia_imp_unbal_mcar_10, mitml_imp_unbal_mcar_10, lstm_unbal_mcar_10),
-  colors,
-  "Unbalanced Panel - MCAR 10%"
+# Barplot
+GroupColors <- rep(c("red", "blue", "green", "red", "blue", "green", "red", "blue", "green", "red", "blue", "green"), each = 4)
+par(mar = c(5, 15, 4, 2)) 
+barplot(
+  height = WD_Unbal$WassersteinDistance,
+  names.arg = WD_Unbal$Dataset,
+  las = 2,
+  col = GroupColors,
+  main = "Wasserstein Distance Across the Imputed Datasets for Unbalanced Panel",
+  xlab = "Wasserstein Distance",
+  ylab = "",
+  cex.names = 0.9,
+  horiz = TRUE
 )
-
-# 30% missingness
-ConDisttributionComparisionUnbal(
-  list(mice_imp_unbal_mcar_30, amelia_imp_unbal_mcar_30, mitml_imp_unbal_mcar_30, lstm_unbal_mcar_30),
-  colors,
-  "Unbalanced Panel - MCAR 30%"
-)
-
-# 50% missingness
-ConDisttributionComparisionUnbal(
-  list(mice_imp_unbal_mcar_50, amelia_imp_unbal_mcar_50, mitml_imp_unbal_mcar_50, lstm_unbal_mcar_50),
-  colors,
-  "Unbalanced Panel - MCAR 50%"
-)
-
-### MAR ###
-
-# 10% missingness
-ConDisttributionComparisionUnbal(
-  list(mice_imp_unbal_mar_10, amelia_imp_unbal_mar_10, mitml_imp_unbal_mar_10, lstm_unbal_mar_10),
-  colors,
-  "Unbalanced Panel - MAR 10%"
-)
-
-# 30% missingness
-ConDisttributionComparisionUnbal(
-  list(mice_imp_unbal_mar_30, amelia_imp_unbal_mar_30, mitml_imp_unbal_mar_30, lstm_unbal_mar_30),
-  colors,
-  "Unbalanced Panel - MAR 30%"
-)
-
-# 50% missingness
-ConDisttributionComparisionUnbal(
-  list(mice_imp_unbal_mar_50, amelia_imp_unbal_mar_50, mitml_imp_unbal_mar_50, lstm_unbal_mar_50),
-  colors,
-  "Unbalanced Panel - MAR 50%"
-)
-
-### MNAR ###
-
-# 10% missingness
-ConDisttributionComparisionUnbal(
-  list(mice_imp_unbal_mnar_10, amelia_imp_unbal_mnar_10, mitml_imp_unbal_mnar_10, lstm_unbal_mnar_10),
-  colors,
-  "Unbalanced Panel - MNAR 10%"
-)
-
-# 30% missingness
-ConDisttributionComparisionUnbal(
-  list(mice_imp_unbal_mnar_30, amelia_imp_unbal_mnar_30, mitml_imp_unbal_mnar_30, lstm_unbal_mnar_30),
-  colors,
-  "Unbalanced Panel - MCAR 30%"
-)
-
-# 50% missingness
-ConDisttributionComparisionUnbal(
-  list(mice_imp_unbal_mnar_50, amelia_imp_unbal_mnar_50, mitml_imp_unbal_mnar_50, lstm_unbal_mnar_50),
-  colors,
-  "Unbalanced Panel - MNAR 50%"
-)
+par(mar = c(5, 4, 4, 2) + 0.1) # set default R margin
