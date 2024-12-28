@@ -389,7 +389,6 @@ aggr(balanced_panel_data_mar_10,
 #### MNAR ####
 ##############
 
-#### Probabilistic, Linear Regression model ####
 #### 50% ####
 
 p_mis_50 <- .50
@@ -1821,17 +1820,26 @@ print(WD_Bal)
 
 # Barplot
 GroupColors <- rep(c("red", "blue", "green", "red", "blue", "green", "red", "blue", "green", "red", "blue", "green"), each = 4)
-par(mar = c(5, 15, 4, 2)) 
+par(mar = c(5, 15, 4, 3)) 
 barplot(
   height = WD_Bal$WassersteinDistance,
   names.arg = WD_Bal$Dataset,
   las = 2,
   col = GroupColors,
-  main = "Wasserstein Distance Across the Imputed Datasets for Balanced Panel",
+  main = "Wasserstein Distances for Balanced Panel",
   xlab = "Wasserstein Distance",
   ylab = "",
   cex.names = 0.9,
-  horiz = TRUE
+  horiz = TRUE,
+  xlim = c(0, max(WD_Bal$WassersteinDistance) * 1.2)
+)
+
+text(
+  x = WD_Bal$WassersteinDistance, 
+  y = bar_positions,
+  labels = round(WD_Bal$WassersteinDistance, 4),
+  pos = 4,
+  cex = 0.8
 )
 
 ### Unbalanced Panel ###
@@ -1884,18 +1892,27 @@ print(WD_Unbal)
 
 # Barplot
 GroupColors <- rep(c("red", "blue", "green", "red", "blue", "green", "red", "blue", "green", "red", "blue", "green"), each = 4)
-par(mar = c(5, 15, 4, 2)) 
 barplot(
   height = WD_Unbal$WassersteinDistance,
   names.arg = WD_Unbal$Dataset,
   las = 2,
   col = GroupColors,
-  main = "Wasserstein Distance Across the Imputed Datasets for Unbalanced Panel",
+  main = "Wasserstein Distances for Unbalanced Panel",
   xlab = "Wasserstein Distance",
   ylab = "",
   cex.names = 0.9,
-  horiz = TRUE
+  horiz = TRUE,
+  xlim = c(0, max(WD_Unbal$WassersteinDistance) * 1.2)
 )
+
+text(
+  x = WD_Unbal$WassersteinDistance, 
+  y = bar_positions,
+  labels = round(WD_Unbal$WassersteinDistance, 4),
+  pos = 4,
+  cex = 0.8
+)
+
 par(mar = c(5, 4, 4, 2) + 0.1) # set default R margin
 
 ###########################
@@ -2540,7 +2557,7 @@ plot_amelia <- BiasPlot(BiasMeanDF_Bal, "MeanBias", "amelia")
 plot_lstm <- BiasPlot(BiasMeanDF_Bal, "MeanBias", "lstm")
 plot_mitml <- BiasPlot(BiasMeanDF_Bal, "MeanBias", "mitml")
 
-grid.arrange(plot_mice, plot_amelia, plot_lstm, plot_mitml, nrow = 2) # Adjusted for a 2-row layout
+grid.arrange(plot_mice, plot_amelia, plot_lstm, plot_mitml, nrow = 2) # Same for Unbalanced, change the name
 
 ##### Plot RMSE Histograms ####
 
@@ -2569,5 +2586,5 @@ plot_amelia <- RMSEPlot(RMSEDF_Unbal, "RMSE_Unbal", "amelia")
 plot_lstm <- RMSEPlot(RMSEDF_Unbal, "RMSE_Unbal", "lstm")
 plot_mitml <- RMSEPlot(RMSEDF_Unbal, "RMSE_Unbal", "mitml")
 
-grid.arrange(plot_mice, plot_amelia, plot_lstm, plot_mitml, nrow = 2) # Same for Unbalanced
+grid.arrange(plot_mice, plot_amelia, plot_lstm, plot_mitml, nrow = 2) # Same for Unbalanced, change the name
 
