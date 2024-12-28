@@ -106,7 +106,7 @@ summary(data$EmploymentHours)
 
 # Education
 count(data, Education)
-data$Education[is.na(data$Education)] <- 7
+data$Education[is.na(data$Education)] <- 7 # Replacing structural missing with 7
 summary(data$Education)
 
 # Sex
@@ -237,6 +237,7 @@ summary(unbalanced_panel_data)
 ## Simulate Missingness in Balanced Panel
 #########################################
 
+# Correlation among the variables to guess the intercept and coefficients
 CTable <- cor(balanced_panel_data[, c("Income", "Age", "EmploymentTypes")], use = "complete.obs")
 print(CTable)
 
@@ -604,7 +605,6 @@ aggr(unbalanced_panel_data_mar_10,
 #### MNAR ####
 ##############
 
-#### Probabilistic, Linear Regression model ####
 #### 50% ####
 
 p_mis_50 <- .50
@@ -1362,7 +1362,7 @@ ConDisttributionComparisionBal <- function(data_list, colors, title) {
   
   ConAge <- data %>% filter(Age >= 15 & Age <= 65) # Condition on Age
   
-  # Plot the conditional distribution of "Income" by "Marital Status"
+  # Plot the conditional distribution of "Income" by "Marital Status" and Age
   p <- ggplot(ConAge, aes(x = Income)) +
     geom_density(color = "black", size = 1) + # Original data coloured black
     labs(
@@ -1483,7 +1483,7 @@ ConDisttributionComparisionUnbal <- function(data_list, colors, title) {
   
   ConAge <- data %>% filter(Age >= 15 & Age <= 65) # Condition on Age
   
-  # Plot the conditional distribution of "Income" by "Marital Status"
+  # Plot the conditional distribution of "Income" by "Marital Status" and Age
   p <- ggplot(ConAge, aes(x = Income)) +
     geom_density(color = "black", size = 1) + # Original data coloured black
     labs(
