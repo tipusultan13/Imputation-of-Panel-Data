@@ -967,7 +967,7 @@ amelia_unbal_mnar_10 <- Data_Imputation_Amelia(unbalanced_panel_data_mnar_10)
 
 EndTime_amelia <- Sys.time()  # Ending time
 ExecutionTime_amelia <- EndTime_amelia - StartTime_amelia
-print(ExecutionTime_amelia) # Time difference of 2.38555 hours
+print(ExecutionTime_amelia) # Time difference of 4.240052 hours
 
 ## LSTM Network ##
 ################
@@ -1179,14 +1179,15 @@ amelia_imp_unbal_mnar_30 <- ameliaData(amelia_unbal_mnar_30)
 amelia_imp_unbal_mnar_10 <- ameliaData(amelia_unbal_mnar_10)
 
 
-par(mfrow = c(3, 2))
+par(mfrow = c(2, 1))
 
 ### Balanced Panel Comparisons ###
 
 DisttributionComparisionBal <- function(data_list, colors, title) {
+  
   plot(density(balanced_panel_data$Income, na.rm = TRUE), 
        main = title, xlab = "Income", ylab = "Density", 
-       lwd = 2, col = "black")
+       lwd = 2, col = "black", ylim = c(0, .9))
   for (i in 1:length(data_list)) {
     lines(density(data_list[[i]]$Income, na.rm = TRUE), col = colors[i], lwd = 2)
   }
@@ -1272,7 +1273,7 @@ DisttributionComparisionBal(
 DisttributionComparisionUnbal <- function(data_list, colors, title) {
   plot(density(unbalanced_panel_data$Income, na.rm = TRUE), 
        main = title, xlab = "Income", ylab = "Density", 
-       lwd = 2, col = "black")
+       lwd = 2, col = "black", ylim = c(0, .9))
   for (i in 1:length(data_list)) {
     lines(density(data_list[[i]]$Income, na.rm = TRUE), col = colors[i], lwd = 2)
   }
